@@ -1,4 +1,4 @@
-# ISD: Island Sampling Day Project
+# ISD: Island Sampling Day Script Repository
 ## Island sampling day, chapter one: Crete, a microbiome study to explore environmental drivers of community composition across ecosystems in the island of Crete, Greece
 A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 <ol type="a">
