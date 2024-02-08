@@ -8,3 +8,5 @@ A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 </ol>
 This repository holds ISD molecular ecology analysis pertinent scripts.
 ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/view/PRJEB21776" target="blank">European Nucleotide Archive repository project</a>.
+
+## Data integration
