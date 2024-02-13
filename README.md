@@ -1,5 +1,9 @@
-# ISD: Island Sampling Day Script Repository
-## Island sampling day, chapter one: Crete, a microbiome study to explore environmental drivers of community composition across ecosystems in the island of Crete, Greece
+# Island Sampling Day (ISD)
+## Chapter one: Crete
+
+ISD is a soil microbiome study to explore environmental drivers of community
+composition across ecosystems in the island of Crete, Greece.
+
 A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 <ol type="a">
   <li>describe the first full island microbial community assessment</li>
@@ -8,5 +12,22 @@ A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 </ol>
 This repository holds ISD molecular ecology analysis pertinent scripts.
 ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/view/PRJEB21776" target="blank">European Nucleotide Archive repository project</a>.
+
+## Contents
+
+* [Scripts](#scripts)
+* [Data retrieval](#data-retrieval)
+* [Sequences](#sequences)
+* [Inference and Taxonomy](#inference-and-taxonomy)
+* [Metadata](#metadata)
+* [Spatial data](#spatial-data)
+* [Analysis](#analysis)
+* [Software](#software)
+* [Hardware](#hardware)
+* [Citation](#citation)
+* [Licence](#licence)
+
+## Scripts
+The scripts of the analysis are in the `Scripts` folder and cover the following tasks:
 
 ## Data integration
