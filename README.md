@@ -15,19 +15,50 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 
 ## Contents
 
+* [Methods](#methods)
 * [Scripts](#scripts)
+* [Data integration](#data-integration)
 * [Data retrieval](#data-retrieval)
 * [Sequences](#sequences)
 * [Inference and Taxonomy](#inference-and-taxonomy)
-* [Metadata](#metadata)
-* [Spatial data](#spatial-data)
 * [Analysis](#analysis)
 * [Software](#software)
 * [Hardware](#hardware)
 * [Citation](#citation)
 * [Licence](#licence)
 
+## Methods
+
 ## Scripts
 The scripts of the analysis are in the `Scripts` folder and cover the following tasks:
 
+* Search ENA for samples in the island of Crete
+* Get ISD metadata and sequences
+* HPC jobs and parameter files
+* Filtering, clustering/denoising and taxonomic assigninments
+* Biodiversity analysis
+* Figures
+
 ## Data integration
+
+Crete has been sampled multiple times for its' environmental microbiome.
+
+The ISD project is the first one on this scale.
+
+
+## Sequences
+Total reads (forward and reverse) = 121232490 in 140 samples
+
+Primers used are FWD: 5'-ACTCCTACGGGAGGCAGCAG-3' REV: 5'-GGACTACHVGGGTWTCTAAT-3'
+
+Numbers of Ns in reads : there are many reads with Ns and the `dada` function
+doesn't accept so after the filtering they are all removed.
+
+## Hardware
+
+Most computations were performed in the Zorbas HPC facility of [IMBBC-HCMR](https://hpc.hcmr.gr),
+see here for more [info](https://doi.org/10.1093/gigascience/giab053).
+
+## Licence
+
+GNU GPLv3 license (for 3rd party scripts separate licenses apply).
