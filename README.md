@@ -16,6 +16,7 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 
 ## Contents
 
+* [Sampling](#sampling)
 * [Methods](#methods)
 * [Scripts](#scripts)
 * [Data retrieval](#data-retrieval)
@@ -27,7 +28,20 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 * [Citation](#citation)
 * [Licence](#licence)
 
-## Methods
+## Sampling
+
+During the 18th of Genome Standards Consortium workshop the participants along
+with members of Hellenic Centre for Marine Research organised the Island Sampling Day Crete 2016. 
+
+One Day, One Island - 15th June 2016, Crete
+- coordinated island wide Citizen Science activity
+- 26 participants, 10 teams/routes
+- 435 soil samples, 140 plant specimens
+- 72 predefined locations across the island of Crete
+- different types of environments, elevations, vegetation and soil
+- a range of environmental and temporal variables recorded on site
+
+See here for the video of the [ISD 2016 project](https://www.youtube.com/embed/VpqIy7HDTd0)
 
 ## Scripts
 The scripts of the analysis are in the `Scripts` folder and cover the following tasks:
