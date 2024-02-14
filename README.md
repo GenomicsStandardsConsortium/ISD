@@ -17,9 +17,8 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 
 * [Methods](#methods)
 * [Scripts](#scripts)
-* [Data integration](#data-integration)
 * [Data retrieval](#data-retrieval)
-* [Sequences](#sequences)
+* [Data integration](#data-integration)
 * [Inference and Taxonomy](#inference-and-taxonomy)
 * [Analysis](#analysis)
 * [Software](#software)
@@ -39,20 +38,44 @@ The scripts of the analysis are in the `Scripts` folder and cover the following 
 * Biodiversity analysis
 * Figures
 
-## Data integration
+## Data retrieval
 
-Crete has been sampled multiple times for its' environmental microbiome.
+### Metadata
 
-The ISD project is the first one on this scale.
+Retrieve the filereport of ENA for the ISD Crete project id PRJEB21776
 
+```
+curl -o Data/Metadata/filereport_read_run_PRJEB21776_tsv.txt \
+    'https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJEB21776&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,fastq_ftp,submitted_ftp,sra_ftp,bam_ftp&format=tsv'
 
-## Sequences
+```
+
+Then for each sample retrieve all attributes with the `get_isd_crete_2016_attributes.py` 
+script. These are all in `xml` format. Using the `ena_xml_to_csv.py` these files 
+are aggregated to an long format tsv file.
+
+### Sequences
+
+To retrieve the sequences use the `get_isd_crete_2016_fastq.sh` script after
+downloading the metadata.
+
 Total reads (forward and reverse) = 121232490 in 140 samples
 
 Primers used are FWD: 5'-ACTCCTACGGGAGGCAGCAG-3' REV: 5'-GGACTACHVGGGTWTCTAAT-3'
 
 Numbers of Ns in reads : there are many reads with Ns and the `dada` function
 doesn't accept so after the filtering they are all removed.
+
+## Data integration
+
+Crete has been sampled multiple times for its' environmental microbiome.
+The ISD project is the first one on this scale.
+
+To investigate which samples are in Crete and are related to microbiome we 
+did an analysis. 
+* get all samples metadata from ENA
+* filter locations to be in Crete, island
+* filter the metagenomic samples that are also terrestrial and visualise
 
 ## Hardware
 
