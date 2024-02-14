@@ -12,7 +12,7 @@
 ###############################################################################
 # usage:./get_isd_crete_2016_attributes.py
 ###############################################################################
-
+import os
 import requests, sys, time
 from random import uniform
 from datetime import date
@@ -52,17 +52,28 @@ def attr_request(accession):
     time.sleep(uniform(1,2))
 
 def write_xml(attributes,accession):
+    # check directoty
+    directory_path = "Data/Metadata/ena_samples_attr/"
+    
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+        print(f"Directory '{directory_path}' created successfully.")
+    else:
+        print(f"Directory '{directory_path}' already exists.")
     
     # load to xml
-    newxml = "../ena_samples_attr/" + "attributes_" + str(accession) + ".xml"
+    newxml = str(directory_path) + "attributes_" + str(accession) + ".xml"
     
     with open(newxml, "w") as xmlFile:
         xmlFile.write(attributes)
 
 ### main part of code
 samples = []
+cwd = os.getcwd()  # Get the current working directory (cwd)
+files = os.listdir(cwd)  # Get all the files in that directory
+print("Files in %r: %s" % (cwd, files))
 
-with open("../ena_metadata/filereport_read_run_PRJEB21776_tsv.txt") as file:
+with open("Data/Metadata/filereport_read_run_PRJEB21776_tsv.txt") as file:
     next(file) #skip the first line
     for line in file:
         

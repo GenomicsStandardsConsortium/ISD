@@ -16,10 +16,10 @@ import csv
 import os,sys
 
 # Directory containing the XML files
-xml_dir = 'ena_samples_attr/'
+xml_dir = 'Data/Metadata/ena_samples_attr/'
 
 # Output TSV file
-output_file = 'ena_metadata/ena_isd_2016_attributes.tsv'
+output_file = 'Data/Metadata/ena_isd_2016_attributes.tsv'
 
 # List to store the extracted data
 data = []

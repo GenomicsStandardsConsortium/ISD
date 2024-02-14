@@ -10,16 +10,16 @@
 # In total there are 280 .fastq.gz files.
 
 runs_accession=`gawk -F"\t" '(NR>1){split($7,fastq, ";") ; for (i in fastq){print fastq[i]}}' \
-    ~/isd-crete/ena_metadata/filereport_read_run_PRJEB21776_tsv.txt`
+    Data/Metadata/filereport_read_run_PRJEB21776_tsv.txt`
 
 # go to directory
-cd ~/isd-crete/ena_data
+cd Data/Sequences
 
 # for each ftp link wget and append to a log file
 for i in $runs_accession
 do
     echo "proceeding to download " $i 
-    wget -c --append-output=../ena_metadata/get_fastq.log $i
+    wget -c --append-output=../Metadata/get_fastq.log $i
     sleep 3
 done
 
