@@ -15,18 +15,10 @@
 # OUTPUT:
 #
 # the main output of this script is 
-# 0. community_matrix_l.tsv
-# 1. crete_biodiversity_asv.tsv
+# Results/crete_biodiversity_otu.tsv
 # which contains the sample - asv occurrences with abundance along with 
 # taxonomic information.
-# 2. sample_metadata.tsv
-# 3. asv_metadata.tsv
 # 
-# Other 4 files are produced
-# crete_biodiversity_matrix.RDS, a matrix of abundances
-# tax_tab.RDS, taxonomy table with the remaining asvs
-# sample_stats.tsv
-# phyla_samples_summary.tsv
 ###############################################################################
 # RUNNING TIME: 9 minutes
 ###############################################################################
@@ -61,46 +53,6 @@ fasta <- data.frame(
   sequence = tapply(fasta_q[!ids], cumsum(ids)[!ids], function(x) {
     paste(x, collapse = "")
   }))
-
-################################### Metadata ####################################
-
-metadata_long <- read_delim("Data/Metadata/ena_isd_2016_attributes.tsv", delim="\t") %>%
-    mutate(VALUE=gsub("\\r(?!\\n)","", VALUE, perl=T))
-# metadata to wide format
-
-metadata_wide <- metadata_long %>% 
-    dplyr::select(-c(UNITS)) %>%
-    filter(!(TAG %in% c("ENA-FIRST-PUBLIC", "ENA-LAST-UPDATE"))) %>%
-    mutate(TAG=gsub(" ","_", TAG, perl=T)) %>%
-    mutate(TAG=gsub("-","_", TAG, perl=T)) %>%
-    pivot_wider(names_from=TAG, 
-                values_from=VALUE)
-
-metadata_wide$total_nitrogen <- as.numeric(metadata_wide$total_nitrogen)
-metadata_wide$water_content <- as.numeric(metadata_wide$water_content)
-metadata_wide$total_organic_carbon <- as.numeric(metadata_wide$total_organic_carbon)
-metadata_wide$sample_volume_or_weight_for_DNA_extraction <- as.numeric(metadata_wide$sample_volume_or_weight_for_DNA_extraction)
-metadata_wide$DNA_concentration <- as.numeric(metadata_wide$dna_concentration)
-metadata_wide$latitude <- as.numeric(metadata_wide$`geographic_location_(latitude)`)
-metadata_wide$longitude <- as.numeric(metadata_wide$`geographic_location_(longitude)`)
-metadata_wide$elevation <- as.numeric(metadata_wide$`geographic_location_(elevation)`)
-metadata_wide$amount_or_size_of_sample_collected <- as.numeric(metadata_wide$amount_or_size_of_sample_collected)
-
-metadata <- metadata_wide %>%
-    dplyr::select(ENA_RUN, source_material_identifiers, total_nitrogen, water_content,total_organic_carbon,sample_volume_or_weight_for_DNA_extraction,DNA_concentration,latitude, longitude,elevation, amount_or_size_of_sample_collected, vegetation_zone) %>%
-    arrange(ENA_RUN) %>%
-    mutate(route = sub("isd_(.*.)_site.*" ,"\\1" , source_material_identifiers))
-
-## location pairs of each site
-metadata$sites <- gsub("_loc_*.","", metadata$source_material_identifiers)
-metadata$location <- gsub(".*(loc_.*)","\\1", metadata$source_material_identifiers)
-
-## C:N ratio
-## Six samples have 0 total_nitrogen. So to avoid the inf 
-## use the if else statement.
-metadata$carbon_nitrogen_ratio <- ifelse(metadata$total_nitrogen==0,
-                                         metadata$total_organic_carbon,
-                                         metadata$total_organic_carbon/metadata$total_nitrogen)
 
 ##################################### taxonomy ###################################
 colnames <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
@@ -163,21 +115,8 @@ print(paste0("OTUs without taxonomy: ", nrow(no_taxonomy)))
 
 crete_biodiversity_otu <- crete_biodiversity_all |>
     filter(abundance>0) |>
-    filter(!is.na(taxonomy))
+    filter(!is.na(taxonomy)) |>
+    rename(taxonomic_unit=OTU)
 
 write_delim(crete_biodiversity_otu, "Results/crete_biodiversity_otu.tsv", delim="\t")
 
-### move from here the rest
-
-## create a abundance matrix
-crete_biodiversity_m <- crete_biodiversity_all %>%
-    filter(!is.na(taxonomy)) %>%
-    dplyr::select(ENA_RUN, OTU, abundance) %>%
-    pivot_wider(names_from=ENA_RUN, values_from=abundance, values_fill = 0) %>%
-    as.matrix()
-
-crete_biodiversity_matrix <- crete_biodiversity_m[,-1]
-crete_biodiversity_matrix <- apply(crete_biodiversity_matrix, 2, as.numeric)
-rownames(crete_biodiversity_matrix) <- crete_biodiversity_m[,1]
-saveRDS(crete_biodiversity_matrix, "Results/crete_otu_matrix.RDS")
-print("master file created")
