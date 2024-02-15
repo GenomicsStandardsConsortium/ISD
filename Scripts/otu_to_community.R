@@ -46,10 +46,13 @@ create_dir("Figures")
 ################################## Load data ##################################
 # Load data
 print("loading data")
+### abundance table
 abundance_table <- read_delim("Results/pema215_vsearch/my_taxon_assign/finalTable.tsv", delim="\t") |>
     rename(taxonomy = Classification) |>
-    mutate(taxonomy=gsub("Main genome;","",taxonomy))
+    mutate(taxonomy=gsub("Main genome;","",taxonomy)) |>
+    mutate(taxonomy=gsub(";","; ",taxonomy))
 
+### sequences
 fasta_q <- readLines("Results/pema215_vsearch/all.otus.fasta")
 ids <- grepl(">", fasta_q)
 
@@ -59,30 +62,6 @@ fasta <- data.frame(
     paste(x, collapse = "")
   }))
 
-#silva_132 <- read_delim("Data/Metadata/tax_slv_ssu_132.txt", delim="\t", col_names=F)
-
-#colnames(silva_132) <- c("taxonomy", "n_taxa", "classification", "5")
-
-#silva_132 <- silva_132 |>
-#    dplyr::select(taxonomy,classification) |>
-#    mutate(taxonomy=gsub(";$","",taxonomy)) 
-
-#silva_132$scientificName <- sapply(silva_132$taxonomy,
-#                                           keep_last_2,
-#                                           simplify = T, USE.NAMES=F)
-
-colnames <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
-tax_tab_tmp <- abundance_table |>
-    dplyr::select(OTU,taxonomy)
-
-tax_tab <- separate(tax_tab_tmp,
-                     taxonomy,
-                     colnames,
-                     sep = ";",
-                     remove = TRUE,
-                     convert = FALSE,
-                     extra = "warn",
-                     fill = "warn")
 ################################### Metadata ####################################
 
 metadata_long <- read_delim("Data/Metadata/ena_isd_2016_attributes.tsv", delim="\t") %>%
@@ -123,60 +102,82 @@ metadata$carbon_nitrogen_ratio <- ifelse(metadata$total_nitrogen==0,
                                          metadata$total_organic_carbon,
                                          metadata$total_organic_carbon/metadata$total_nitrogen)
 
+##################################### taxonomy ###################################
+colnames <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+tax_tab_tmp <- abundance_table |>
+    dplyr::select(OTU,taxonomy) |>
+    separate(taxonomy,
+                     colnames,
+                     sep = "; ",
+                     remove = FALSE,
+                     convert = FALSE,
+                     extra = "warn",
+                     fill = "warn") 
+
+tax_tab_tmp$keep_last <- sapply(tax_tab_tmp$taxonomy,
+                                           keep_last,
+                                           simplify = T, USE.NAMES=F)
+tax_tab <- tax_tab_tmp |> 
+    pivot_longer(-c(OTU,taxonomy,keep_last),
+                 names_to="classification",
+                 values_to="scientificName") |>
+    filter(scientificName==keep_last) |>
+    dplyr::select(-keep_last) |>
+    separate(taxonomy,
+                 colnames,
+                 sep = "; ",
+                 remove = FALSE,
+                 convert = FALSE,
+                 extra = "warn",
+                 fill = "warn")
+
+tax_tab_tmp_no <- tax_tab_tmp[which(!c(tax_tab_tmp$OTU %in% tax_tab$OTU)),]
+print("there are some OTUs that are excluded, Chroroplasts")
+nrow(tax_tab_tmp_no)
 ########################## transform the matrices to long tables ##########################
 
 print("transforming data")
 
+####################### merge abundance and taxonomy ##########################
 ## the abundance matrix has all the biodiverstity information
-## sampleID, ASV and abundance. NOTE that contains many zeros!!!
-## UNCOMMENT if data are from RDS!
-abundance_long <- abundance_table |>
+abundance_table_long <- abundance_table |>
     pivot_longer(!c(OTU,taxonomy),
                  names_to = "ENA_RUN",
                  values_to = "abundance") |>
-    left_join(tax_tab, by=c("OTU"="OTU")) 
+    dplyr::select(-taxonomy) |> 
+    left_join(tax_tab, by=c("OTU"="OTU"))
 
 
-abundance_long_all <- abundance_long |>
-    left_join(fasta, by=c("OTU"="OTU"))
-
-
-# keep the lowest taxonomic inforfation per ASV
-taxa_asv_s$scientificName <- sapply(taxa_asv_s$taxonomy,
-                                           keep_last_2,
-                                           simplify = T, USE.NAMES=F)
-
-taxa_asv_s$classification <- sapply(taxa_asv_s$higherClassification,
-                                           keep_last,
-                                           simplify = T, USE.NAMES=F)
-
-taxa_asv_all <- taxa_asv_l %>% 
-    pivot_wider(names_from=higherClassification, 
-                values_from=scientificName) %>% 
-    left_join(taxa_asv_s, by=c("asv"="asv"))
-
-####################### merge abundance and taxonomy ##########################
-
-crete_biodiversity_all <- abundance_asv_long %>%
-    left_join(taxa_asv_all,by=c("asv"="asv")) %>%
-    filter(abundance>0)
+crete_biodiversity_all <- abundance_table_long |>
+    left_join(fasta, by=c("OTU"="OTU")) |>
+    mutate(taxonomy=if_else(taxonomy=="No hits", NA, taxonomy))
 
 ########################### Master file ######################################
 ## total ASVs and taxonomy
-asv_no_taxonomy <- crete_biodiversity_all %>% 
-    distinct(asv,classification) %>%
-    filter(is.na(classification))
+print("there are some OTUs that are excluded, Chroroplasts and No hits")
+no_taxonomy <- crete_biodiversity_all %>% 
+    distinct(OTU,taxonomy) %>%
+    filter(is.na(taxonomy))
 
-print(paste0("ASVs without taxonomy: ", nrow(asv_no_taxonomy)))
+print(paste0("OTUs without taxonomy: ", nrow(no_taxonomy)))
+
+crete_biodiversity_otu <- crete_biodiversity_all |>
+    filter(abundance>0) |>
+    filter(!is.na(taxonomy))
+
+write_delim(crete_biodiversity_otu, "Results/crete_biodiversity_otu.tsv", delim="\t")
+
+### move from here the rest
+
 ## create a abundance matrix
 crete_biodiversity_m <- crete_biodiversity_all %>%
-    filter(!is.na(classification)) %>%
-    dplyr::select(ENA_RUN, asv_id, abundance) %>%
+    filter(!is.na(taxonomy)) %>%
+    dplyr::select(ENA_RUN, OTU, abundance) %>%
     pivot_wider(names_from=ENA_RUN, values_from=abundance, values_fill = 0) %>%
     as.matrix()
 
 crete_biodiversity_matrix <- crete_biodiversity_m[,-1]
 crete_biodiversity_matrix <- apply(crete_biodiversity_matrix, 2, as.numeric)
 rownames(crete_biodiversity_matrix) <- crete_biodiversity_m[,1]
-saveRDS(crete_biodiversity_matrix, "results/crete_biodiversity_matrix.RDS")
+saveRDS(crete_biodiversity_matrix, "Results/crete_otu_matrix.RDS")
 print("master file created")

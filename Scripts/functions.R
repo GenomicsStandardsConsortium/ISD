@@ -21,7 +21,6 @@ library(ggplot2)
 ################################## functions ##################################
 # this function keeps the last occurrence of a string separated by |
 keep_last <- function(x) tail(strsplit(x, split="; ")[[1]],1)
-keep_last_2 <- function(x) tail(strsplit(x, split=";")[[1]],1)
 ## create dir
 create_dir <- function(dir_name){
 
