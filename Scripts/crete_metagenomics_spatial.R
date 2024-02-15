@@ -7,15 +7,14 @@
 ##
 ## Date Created: 2023-11-16
 
-
-
 library(sf)
 library(tidyverse)
+library(RColorBrewer)
 
 # crete borders
-crete_shp <- sf::st_read("data/crete/crete.shp") 
+crete_shp <- sf::st_read("Data/crete/crete.shp") 
 
-metadata_long <- read_delim("results/ena_samples_attributes-crete.tsv", delim="\t") %>%
+metadata_long <- read_delim("Results/ena_samples_attributes-crete.tsv", delim="\t") %>%
     mutate(VALUE=gsub("\\r(?!\\n)","", VALUE, perl=T)) %>%
     distinct(.)
 # metadata to wide format and column name tidy
@@ -62,7 +61,7 @@ crete_terrestrial_metagenome <- st_intersection(metadata_wide_sf, crete_shp) %>%
     filter(grepl("metagenome",organism), !grepl("marine|sponge|seawater|sediment",organism))
 
 
-write_delim(crete_terrestrial_metagenome,"results/crete_terrestrial_metagenome.tsv", delim="\t")
+write_delim(crete_terrestrial_metagenome,"Results/crete_terrestrial_metagenome.tsv", delim="\t")
 
 length(unique(crete_terrestrial_metagenome$ENA_STUDY))
 length(unique(crete_terrestrial_metagenome$project_name))
@@ -87,7 +86,7 @@ g_ena <- g_base +
     scale_color_manual(values = getPalette(colourCount)) +
     theme(legend.position = 'bottom',legend.title=element_blank())
 
-ggsave(paste0("figures/map_ena_samples_crete.png",sep=""),
+ggsave(paste0("Figures/map_ena_samples_crete.png",sep=""),
        plot=g_ena, 
        height = 20, 
        width = 30,
