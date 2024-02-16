@@ -24,12 +24,10 @@
 # ./Scripts/isd_crete_biodiversity.R Results/crete_biodiversity_otu.tsv "OTU"
 ###############################################################################
 source("Scripts/functions.R")
-library(magrittr)
 library(dplyr)
 library(tibble)
 library(readr)
 library(tidyr)
-library(vegan)
 library(SRS) # normalisation
 
 ################################## User input #################################
@@ -57,15 +55,15 @@ create_dir("Results")
 create_dir("Figures")
 ################################### Metadata ##################################
 
-metadata_long <- read_delim("Data/Metadata/ena_isd_2016_attributes.tsv", delim="\t") %>%
+metadata_long <- read_delim("Data/Metadata/ena_isd_2016_attributes.tsv", delim="\t") |>
     mutate(VALUE=gsub("\\r(?!\\n)","", VALUE, perl=T))
 # metadata to wide format
 
-metadata_wide <- metadata_long %>% 
-    dplyr::select(-c(UNITS)) %>%
-    filter(!(TAG %in% c("ENA-FIRST-PUBLIC", "ENA-LAST-UPDATE"))) %>%
-    mutate(TAG=gsub(" ","_", TAG, perl=T)) %>%
-    mutate(TAG=gsub("-","_", TAG, perl=T)) %>%
+metadata_wide <- metadata_long |> 
+    dplyr::select(-c(UNITS)) |>
+    filter(!(TAG %in% c("ENA-FIRST-PUBLIC", "ENA-LAST-UPDATE"))) |>
+    mutate(TAG=gsub(" ","_", TAG, perl=T)) |>
+    mutate(TAG=gsub("-","_", TAG, perl=T)) |>
     pivot_wider(names_from=TAG, 
                 values_from=VALUE)
 
@@ -79,9 +77,9 @@ metadata_wide$longitude <- as.numeric(metadata_wide$`geographic_location_(longit
 metadata_wide$elevation <- as.numeric(metadata_wide$`geographic_location_(elevation)`)
 metadata_wide$amount_or_size_of_sample_collected <- as.numeric(metadata_wide$amount_or_size_of_sample_collected)
 
-metadata <- metadata_wide %>%
-    dplyr::select(ENA_RUN, source_material_identifiers, total_nitrogen, water_content,total_organic_carbon,sample_volume_or_weight_for_DNA_extraction,DNA_concentration,latitude, longitude,elevation, amount_or_size_of_sample_collected, vegetation_zone) %>%
-    arrange(ENA_RUN) %>%
+metadata <- metadata_wide |>
+    dplyr::select(ENA_RUN, source_material_identifiers, total_nitrogen, water_content,total_organic_carbon,sample_volume_or_weight_for_DNA_extraction,DNA_concentration,latitude, longitude,elevation, amount_or_size_of_sample_collected, vegetation_zone) |>
+    arrange(ENA_RUN) |>
     mutate(route = sub("isd_(.*.)_site.*" ,"\\1" , source_material_identifiers))
 
 ## location pairs of each site
@@ -104,10 +102,10 @@ metadata$carbon_nitrogen_ratio <- ifelse(metadata$total_nitrogen==0,
 ### move from here the rest
 
 ############################ create a abundance matrix ########################
-crete_biodiversity_m <- crete_biodiversity_all %>%
-    filter(!is.na(taxonomy)) %>%
-    dplyr::select(ENA_RUN, taxonomic_unit, abundance) %>%
-    pivot_wider(names_from=ENA_RUN, values_from=abundance, values_fill = 0) %>%
+crete_biodiversity_m <- crete_biodiversity_all |>
+    filter(!is.na(taxonomy)) |>
+    dplyr::select(ENA_RUN, taxonomic_unit, abundance) |>
+    pivot_wider(names_from=ENA_RUN, values_from=abundance, values_fill = 0) |>
     as.matrix()
 
 crete_biodiversity_matrix <- crete_biodiversity_m[,-1]
@@ -172,8 +170,8 @@ biodiversity_srs <- biodiversity_srs[-which(rowSums(biodiversity_srs)==0) ,]
 ############################# Merge SRS ################################
 biodiversity_srs_l <- dist_long(biodiversity_srs,"srs_abundance")
 
-crete_biodiversity <- crete_biodiversity_all %>%
-    filter(!is.na(classification)) %>% 
+crete_biodiversity <- crete_biodiversity_all |>
+    filter(!is.na(classification)) |> 
     left_join(biodiversity_srs_l, by=c("taxonomic_unit"="rowname", "ENA_RUN"="colname"))
 
 write_delim(crete_biodiversity,paste0("Results/",prefix,"_crete_biodiversity.tsv", sep=""),delim="\t")
@@ -198,26 +196,26 @@ nrow(crete_biodiversity[!is.na(crete_biodiversity$srs_abundance) & !is.na(crete_
 ################################ Community Matrix ###########################################
 ## here is the last filtering
 
-community_matrix_l <- crete_biodiversity %>%
+community_matrix_l <- crete_biodiversity |>
     filter(srs_abundance>0,
            !is.na(srs_abundance),
-           !is.na(Phylum)) %>%
-    group_by(ENA_RUN,Kingdom,Phylum,Class,Order,Family,Genus,Species,scientificName,classification,taxonomy) %>%
+           !is.na(Phylum)) |>
+    group_by(ENA_RUN,Kingdom,Phylum,Class,Order,Family,Genus,Species,scientificName,classification,taxonomy) |>
     summarise(n_taxonomic_units=n(),
               reads_srs_mean=mean(srs_abundance),
-              reads_srs_sum=sum(srs_abundance), .groups="keep") %>%
-    group_by(ENA_RUN) %>%
-    mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) %>%
+              reads_srs_sum=sum(srs_abundance), .groups="keep") |>
+    group_by(ENA_RUN) |>
+    mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) |>
     ungroup()
 
 write_delim(community_matrix_l,paste0("Results/",prefix,"_community_matrix_l.tsv", sep=""),delim="\t")
 #community_matrix_l <- read_delim("results/community_matrix_l.tsv",delim="\t") 
 
-community_matrix <- community_matrix_l %>%
-    dplyr::select(ENA_RUN,reads_srs_sum,scientificName) %>%
+community_matrix <- community_matrix_l |>
+    dplyr::select(ENA_RUN,reads_srs_sum,scientificName) |>
     pivot_wider(names_from=scientificName,
                 values_from=reads_srs_sum,
-                values_fill=0) %>%
+                values_fill=0) |>
     as.data.frame()
 
 write_delim(community_matrix,paste0("Results/",prefix,"_community_matrix.tsv", sep=""), delim="\t")
@@ -229,10 +227,10 @@ saveRDS(community_matrix, paste0("Results/",prefix,"_community_matrix.RDS", sep=
 ################################ save Faprotax format ############################
 #### faprotax community matrix
 
-faprotax_community_matrix <- community_matrix_l %>%
+faprotax_community_matrix <- community_matrix_l |>
     pivot_wider(id_cols=c(scientificName,taxonomy),
                 names_from=ENA_RUN,
-                values_from=reads_srs_sum, values_fill=0) %>%
+                values_from=reads_srs_sum, values_fill=0) |>
     relocate(taxonomy, .after = last_col())
 
 write_delim(faprotax_community_matrix,paste0("Results/",prefix,"_faprotax_community_matrix.tsv"),delim="\t")
@@ -261,30 +259,30 @@ rownames(biodiversity_index) <- NULL
 biodiversity_index <- as.data.frame(biodiversity_index)
 ## taxonomic, asv and read diversity per sample
 
-sample_taxonomy_stats <- community_matrix_l %>% 
-    group_by(ENA_RUN,classification) %>%
+sample_taxonomy_stats <- community_matrix_l |> 
+    group_by(ENA_RUN,classification) |>
     summarise(taxa=n(),
               n_taxonomic_units=sum(n_taxonomic_units),
               reads_srs=sum(reads_srs_sum),
-              .groups="keep") %>%
-#    pivot_wider(names_from=classification,values_from=n_taxa) %>%
+              .groups="keep") |>
+#    pivot_wider(names_from=classification,values_from=n_taxa) |>
     dplyr::ungroup()
 
 write_delim(sample_taxonomy_stats,
             paste0("Results/",prefix,"_sample_taxonomy_stats.tsv"),
             delim="\t")
 
-sample_stats_total <- sample_taxonomy_stats %>%
-    group_by(ENA_RUN) %>%
+sample_stats_total <- sample_taxonomy_stats |>
+    group_by(ENA_RUN) |>
     summarise(taxa=sum(taxa),
               n_taxonomic_units=sum(n_taxonomic_units),  # total ASV per sample
               reads_srs=sum(reads_srs))
 
 ### highest species biodiversity sample
 
-crete_biodiversity_s <- community_matrix_l %>%
-    distinct(ENA_RUN, Species) %>% 
-    group_by(ENA_RUN) %>%
+crete_biodiversity_s <- community_matrix_l |>
+    distinct(ENA_RUN, Species) |> 
+    group_by(ENA_RUN) |>
     summarise(Species=n())
 
 print("sample with the highest microbial species diversity")
@@ -292,8 +290,8 @@ crete_biodiversity_s[which(crete_biodiversity_s$Species==max(crete_biodiversity_
 
 ## keep only the sample metadata after filtering
 ## filter also metadata and taxonomy
-metadata_all <-  metadata %>%
-    left_join(biodiversity_index, by=c("ENA_RUN"="ENA_RUN")) %>%
+metadata_all <-  metadata |>
+    left_join(biodiversity_index, by=c("ENA_RUN"="ENA_RUN")) |>
     left_join(sample_stats_total, by=c("ENA_RUN"="ENA_RUN"))
 
 write_delim(metadata_all,
@@ -304,14 +302,14 @@ write_delim(metadata_all,
 print("Taxonomic summary")
 # Create taxonomy table of the remaining asvs
 
-taxonomic_units_stats <- crete_biodiversity %>% 
-    group_by(taxonomic_unit, classification, scientificName) %>% 
+taxonomic_units_stats <- crete_biodiversity |> 
+    group_by(taxonomic_unit, classification, scientificName) |> 
     summarise(n_samples=n(),
               reads=sum(abundance),
               reads_srs=sum(srs_abundance, na.rm=T),
               reads_srs_mean=mean(srs_abundance, na.rm=T),
               reads_srs_sd=sd(srs_abundance, na.rm=T),
-              .groups="keep") %>%
+              .groups="keep") |>
     dplyr::ungroup()
 
 write_delim(taxonomic_units_stats,
@@ -319,23 +317,23 @@ write_delim(taxonomic_units_stats,
             delim="\t")
 
 ## singletons
-singletons <- taxonomic_units_stats %>% 
-    filter(reads==1) %>%
+singletons <- taxonomic_units_stats |> 
+    filter(reads==1) |>
     nrow()
 
 print(paste0("there are ",singletons," singletons asvs"))
 
 ## asv and samples distribution
-taxonomic_units_sample_dist <- taxonomic_units_stats %>%
-    group_by(n_samples) %>%
+taxonomic_units_sample_dist <- taxonomic_units_stats |>
+    group_by(n_samples) |>
     summarise(n_taxonomic_units=n(),
               reads=sum(reads),
               reads_srs=sum(reads_srs, na.rm=T))
 
 
 ################################# Taxonomy #####################################
-tax_tab1 <- community_matrix_l %>%
-    distinct(scientificName, Kingdom, Phylum, Class, Order, Family, Genus, Species) %>%
+tax_tab1 <- community_matrix_l |>
+    distinct(scientificName, Kingdom, Phylum, Class, Order, Family, Genus, Species) |>
     as.matrix()
 
 tax_tab <- tax_tab1[,-1]
@@ -346,12 +344,12 @@ print("taxonomic summary")
 ## how the information of communities of Cretan soils is distributed across 
 ## the taxonomic levels
 
-taxonomy_taxa <- community_matrix_l %>%
-    distinct(classification,scientificName) %>%
-    group_by(classification) %>% summarise(n_taxa=n())
+taxonomy_taxa <- community_matrix_l |>
+    distinct(classification,scientificName) |>
+    group_by(classification) |> summarise(n_taxa=n())
 
-taxonomy_levels_occurrences <- community_matrix_l %>%
-    group_by(classification) %>%
+taxonomy_levels_occurrences <- community_matrix_l |>
+    group_by(classification) |>
     summarise(n_occurrences=n(),
               reads_srs=sum(reads_srs_sum, na.rm=T),
               n_taxonomic_units=sum(n_taxonomic_units))
@@ -361,12 +359,12 @@ write_delim(taxonomy_levels_occurrences,
             delim="\t")
 ## Phyla distribution, average relative abundance and ubiquity
 
-phyla_samples_summary <- community_matrix_l %>%
-    group_by(ENA_RUN,Phylum) %>%
+phyla_samples_summary <- community_matrix_l |>
+    group_by(ENA_RUN,Phylum) |>
     summarise(n_taxonomic_units=sum(n_taxonomic_units),
               abundance_mean=mean(reads_srs_sum),
-              abundance_sum=sum(reads_srs_sum), .groups="keep") %>%
-    group_by(ENA_RUN) %>%
+              abundance_sum=sum(reads_srs_sum), .groups="keep") |>
+    group_by(ENA_RUN) |>
     mutate(relative_abundance=abundance_sum/sum(abundance_sum))
 #    na.omit(Phylum)
 
@@ -376,13 +374,13 @@ write_delim(phyla_samples_summary,
 
 ## phyla stats
 total_samples <- length(unique(community_matrix_l$ENA_RUN))
-phyla_stats <- phyla_samples_summary %>% 
-    group_by(Phylum) %>%
+phyla_stats <- phyla_samples_summary |> 
+    group_by(Phylum) |>
     summarise(n_samples=n(),
               total_taxonomic_units=sum(n_taxonomic_units),
               total_abundance=sum(abundance_sum),
               proportion_sample=n_samples/total_samples,
-              average_relative=mean(relative_abundance)) %>%
+              average_relative=mean(relative_abundance)) |>
     arrange(desc(average_relative))
 
 write_delim(phyla_stats,
@@ -391,22 +389,22 @@ write_delim(phyla_stats,
 
 ## Genera stats
 
-genera_phyla_samples <- community_matrix_l %>%
-    filter(!is.na(Genus)) %>%
-    group_by(Phylum,Genus,ENA_RUN) %>%
+genera_phyla_samples <- community_matrix_l |>
+    filter(!is.na(Genus)) |>
+    group_by(Phylum,Genus,ENA_RUN) |>
     summarise(n_taxonomic_units=sum(n_taxonomic_units),
               reads_srs_mean=mean(reads_srs_sum),
-              reads_srs_sum=sum(reads_srs_sum), .groups="keep") %>%
-    group_by(ENA_RUN) %>%
-    mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) %>%
+              reads_srs_sum=sum(reads_srs_sum), .groups="keep") |>
+    group_by(ENA_RUN) |>
+    mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) |>
     ungroup()
 
 write_delim(genera_phyla_samples,
             paste0("Results/",prefix,"_genera_phyla_samples.tsv"),
             delim="\t")
 
-genera_phyla_stats <- genera_phyla_samples %>%
-    group_by(Phylum,Genus) %>%
+genera_phyla_stats <- genera_phyla_samples |>
+    group_by(Phylum,Genus) |>
     summarise(n_samples=n(),
               relative_abundance_mean=mean(relative_srs), 
               relative_abundance_sd=sd(relative_srs), 
@@ -414,9 +412,9 @@ genera_phyla_stats <- genera_phyla_samples %>%
               reads_srs_mean=mean(reads_srs_sum),
               reads_srs_sd=sd(reads_srs_sum),
               total_reads_srs=sum(reads_srs_sum),
-              proportion_sample=n_samples/total_samples, .groups="keep") %>%
-    group_by(Phylum) %>%
-    mutate(n_genera=n()) %>%
+              proportion_sample=n_samples/total_samples, .groups="keep") |>
+    group_by(Phylum) |>
+    mutate(n_genera=n()) |>
     arrange(desc(n_samples), desc(relative_abundance_mean))
 
 write_delim(genera_phyla_stats,
@@ -425,11 +423,11 @@ write_delim(genera_phyla_stats,
 
 ################################ save network format ############################
 
-network_genera_community_matrix <- community_matrix_l %>%
+network_genera_community_matrix <- community_matrix_l |>
     pivot_wider(id_cols=c(ENA_RUN),
                 names_from=scientificName,
                 values_from=reads_srs_sum,
-                values_fill=0) %>%
+                values_fill=0) |>
     column_to_rownames("ENA_RUN")
 
 write_delim(network_genera_community_matrix,
