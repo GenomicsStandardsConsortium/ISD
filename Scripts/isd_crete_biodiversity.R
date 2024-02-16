@@ -20,7 +20,8 @@
 ###############################################################################
 # RUNNING TIME: 9 minutes
 ###############################################################################
-# usage:./Scripts/isd_crete_biodiversity.R
+# usage:
+# ./Scripts/isd_crete_biodiversity.R Results/crete_biodiversity_otu.tsv "OTU"
 ###############################################################################
 source("Scripts/functions.R")
 library(magrittr)
@@ -31,20 +32,89 @@ library(tidyr)
 library(vegan)
 library(SRS) # normalisation
 
-#### set directory
-create_dir("Results")
-create_dir("Figures")
+################################## User input #################################
+# test if there is at least one argument: if not, return an error
+args = commandArgs(trailingOnly=TRUE)
 
+if (length(args)==0) {
+  stop("At least two arguments must be supplied (input file) and a prefix.n", call.=FALSE)
+} else if (length(args)==1) {
+  stop("At least two arguments must be supplied (input file) and a prefix.n", call.=FALSE)
+} 
+
+abundance_table_path <- args[1]
+prefix <- args[2]
 ################################## Load data ##################################
 
 # Load data
 print("loading data")
+
+crete_biodiversity_all <- read_delim(abundance_table_path, delim="\t")
+
+
+#### set directory
+create_dir("Results")
+create_dir("Figures")
+################################### Metadata ##################################
+
+metadata_long <- read_delim("Data/Metadata/ena_isd_2016_attributes.tsv", delim="\t") %>%
+    mutate(VALUE=gsub("\\r(?!\\n)","", VALUE, perl=T))
+# metadata to wide format
+
+metadata_wide <- metadata_long %>% 
+    dplyr::select(-c(UNITS)) %>%
+    filter(!(TAG %in% c("ENA-FIRST-PUBLIC", "ENA-LAST-UPDATE"))) %>%
+    mutate(TAG=gsub(" ","_", TAG, perl=T)) %>%
+    mutate(TAG=gsub("-","_", TAG, perl=T)) %>%
+    pivot_wider(names_from=TAG, 
+                values_from=VALUE)
+
+metadata_wide$total_nitrogen <- as.numeric(metadata_wide$total_nitrogen)
+metadata_wide$water_content <- as.numeric(metadata_wide$water_content)
+metadata_wide$total_organic_carbon <- as.numeric(metadata_wide$total_organic_carbon)
+metadata_wide$sample_volume_or_weight_for_DNA_extraction <- as.numeric(metadata_wide$sample_volume_or_weight_for_DNA_extraction)
+metadata_wide$DNA_concentration <- as.numeric(metadata_wide$dna_concentration)
+metadata_wide$latitude <- as.numeric(metadata_wide$`geographic_location_(latitude)`)
+metadata_wide$longitude <- as.numeric(metadata_wide$`geographic_location_(longitude)`)
+metadata_wide$elevation <- as.numeric(metadata_wide$`geographic_location_(elevation)`)
+metadata_wide$amount_or_size_of_sample_collected <- as.numeric(metadata_wide$amount_or_size_of_sample_collected)
+
+metadata <- metadata_wide %>%
+    dplyr::select(ENA_RUN, source_material_identifiers, total_nitrogen, water_content,total_organic_carbon,sample_volume_or_weight_for_DNA_extraction,DNA_concentration,latitude, longitude,elevation, amount_or_size_of_sample_collected, vegetation_zone) %>%
+    arrange(ENA_RUN) %>%
+    mutate(route = sub("isd_(.*.)_site.*" ,"\\1" , source_material_identifiers))
+
+## location pairs of each site
+metadata$sites <- gsub("_loc_*.","", metadata$source_material_identifiers)
+metadata$location <- gsub(".*(loc_.*)","\\1", metadata$source_material_identifiers)
+
+## C:N ratio
+## Six samples have 0 total_nitrogen. So to avoid the inf 
+## use the if else statement.
+metadata$carbon_nitrogen_ratio <- ifelse(metadata$total_nitrogen==0,
+                                         metadata$total_organic_carbon,
+                                         metadata$total_organic_carbon/metadata$total_nitrogen)
+
 
 ######################## Decontamination #####################################
 ## very important step, we need the samples controls.
 
 # This is the MASTER dataset of Crete biodiversity and taxonomy
 
+### move from here the rest
+
+############################ create a abundance matrix ########################
+crete_biodiversity_m <- crete_biodiversity_all %>%
+    filter(!is.na(taxonomy)) %>%
+    dplyr::select(ENA_RUN, taxonomic_unit, abundance) %>%
+    pivot_wider(names_from=ENA_RUN, values_from=abundance, values_fill = 0) %>%
+    as.matrix()
+
+crete_biodiversity_matrix <- crete_biodiversity_m[,-1]
+crete_biodiversity_matrix <- apply(crete_biodiversity_matrix, 2, as.numeric)
+rownames(crete_biodiversity_matrix) <- crete_biodiversity_m[,1]
+saveRDS(crete_biodiversity_matrix, paste0("Results/",prefix,"_crete_matrix.RDS", sep=""))
+print("master file created")
 
 ########################## Normalisation Compositionality #####################
 # SRS compositional preparation
@@ -56,7 +126,7 @@ summary(colSums(crete_biodiversity_matrix))
 table(colSums(crete_biodiversity_matrix) > 10000)
 
 ## SRS curve
-png(file="figures/isd_crete_srs_curve.jpeg",
+png(file=paste0("Figures/",prefix,"_isd_crete_srs_curve.jpeg", sep=""),
     width = 50,
     height = 30,
     res=300,
@@ -85,7 +155,7 @@ biodiversity_srs <- SRS(crete_biodiversity_matrix_df,
 rownames(biodiversity_srs) <- rownames(crete_biodiversity_matrix_df)
 
 # how many samples don't have ASVs
-print("how many samples don't have ASVs")
+print("how many samples don't have ASVs/OTUs")
 length(which(colSums(biodiversity_srs)==0))
 # how many ASVs have 0 abundance after the SRS
 print("how many samples have 0 abundance after the SRS")
@@ -104,9 +174,9 @@ biodiversity_srs_l <- dist_long(biodiversity_srs,"srs_abundance")
 
 crete_biodiversity <- crete_biodiversity_all %>%
     filter(!is.na(classification)) %>% 
-    left_join(biodiversity_srs_l, by=c("asv_id"="rowname", "ENA_RUN"="colname"))
+    left_join(biodiversity_srs_l, by=c("taxonomic_unit"="rowname", "ENA_RUN"="colname"))
 
-write_delim(crete_biodiversity,"results/crete_biodiversity_asv.tsv",delim="\t")
+write_delim(crete_biodiversity,paste0("Results/",prefix,"_crete_biodiversity.tsv", sep=""),delim="\t")
 
 #crete_biodiversity <- read_delim("results/crete_biodiversity_asv.tsv",delim="\t")
 
@@ -133,14 +203,14 @@ community_matrix_l <- crete_biodiversity %>%
            !is.na(srs_abundance),
            !is.na(Phylum)) %>%
     group_by(ENA_RUN,Kingdom,Phylum,Class,Order,Family,Genus,Species,scientificName,classification,taxonomy) %>%
-    summarise(asvs=n(),
+    summarise(n_taxonomic_units=n(),
               reads_srs_mean=mean(srs_abundance),
               reads_srs_sum=sum(srs_abundance), .groups="keep") %>%
     group_by(ENA_RUN) %>%
     mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) %>%
     ungroup()
 
-write_delim(community_matrix_l,"results/community_matrix_l.tsv",delim="\t")
+write_delim(community_matrix_l,paste0("Results/",prefix,"_community_matrix_l.tsv", sep=""),delim="\t")
 #community_matrix_l <- read_delim("results/community_matrix_l.tsv",delim="\t") 
 
 community_matrix <- community_matrix_l %>%
@@ -150,11 +220,11 @@ community_matrix <- community_matrix_l %>%
                 values_fill=0) %>%
     as.data.frame()
 
-write_delim(community_matrix,"results/community_matrix.tsv", delim="\t")
+write_delim(community_matrix,paste0("Results/",prefix,"_community_matrix.tsv", sep=""), delim="\t")
 
 rownames(community_matrix) <- community_matrix[,1]
 community_matrix <- community_matrix[,-1]
-saveRDS(community_matrix, "results/community_matrix.RDS")
+saveRDS(community_matrix, paste0("Results/",prefix,"_community_matrix.RDS", sep=""))
 
 ################################ save Faprotax format ############################
 #### faprotax community matrix
@@ -165,8 +235,7 @@ faprotax_community_matrix <- community_matrix_l %>%
                 values_from=reads_srs_sum, values_fill=0) %>%
     relocate(taxonomy, .after = last_col())
 
-write_delim(faprotax_community_matrix,"results/faprotax_community_matrix.tsv",delim="\t")
-
+write_delim(faprotax_community_matrix,paste0("Results/",prefix,"_faprotax_community_matrix.tsv"),delim="\t")
 
 ######################## clean environment ######################## 
 
@@ -195,20 +264,20 @@ biodiversity_index <- as.data.frame(biodiversity_index)
 sample_taxonomy_stats <- community_matrix_l %>% 
     group_by(ENA_RUN,classification) %>%
     summarise(taxa=n(),
-              asvs=sum(asvs),
+              n_taxonomic_units=sum(n_taxonomic_units),
               reads_srs=sum(reads_srs_sum),
               .groups="keep") %>%
 #    pivot_wider(names_from=classification,values_from=n_taxa) %>%
     dplyr::ungroup()
 
 write_delim(sample_taxonomy_stats,
-            "results/sample_taxonomy_stats.tsv",
+            paste0("Results/",prefix,"_sample_taxonomy_stats.tsv"),
             delim="\t")
 
 sample_stats_total <- sample_taxonomy_stats %>%
     group_by(ENA_RUN) %>%
     summarise(taxa=sum(taxa),
-              asvs=sum(asvs),  # total ASV per sample
+              n_taxonomic_units=sum(n_taxonomic_units),  # total ASV per sample
               reads_srs=sum(reads_srs))
 
 ### highest species biodiversity sample
@@ -228,15 +297,15 @@ metadata_all <-  metadata %>%
     left_join(sample_stats_total, by=c("ENA_RUN"="ENA_RUN"))
 
 write_delim(metadata_all,
-            "results/sample_metadata.tsv",
+            paste0("Results/",prefix,"_sample_metadata.tsv"),
             delim="\t")
 
 ########################## ASV summary ###############################
-print("ASV summary")
+print("Taxonomic summary")
 # Create taxonomy table of the remaining asvs
 
-asv_stats <- crete_biodiversity %>% 
-    group_by(asv_id, classification, scientificName) %>% 
+taxonomic_units_stats <- crete_biodiversity %>% 
+    group_by(taxonomic_unit, classification, scientificName) %>% 
     summarise(n_samples=n(),
               reads=sum(abundance),
               reads_srs=sum(srs_abundance, na.rm=T),
@@ -245,19 +314,21 @@ asv_stats <- crete_biodiversity %>%
               .groups="keep") %>%
     dplyr::ungroup()
 
-write_delim(asv_stats,"results/asv_metadata.tsv",delim="\t")
+write_delim(taxonomic_units_stats,
+            paste0("Results/",prefix,"_taxonomic_units_metadata.tsv"),
+            delim="\t")
 
 ## singletons
-singletons <- asv_stats %>% 
+singletons <- taxonomic_units_stats %>% 
     filter(reads==1) %>%
     nrow()
 
 print(paste0("there are ",singletons," singletons asvs"))
 
 ## asv and samples distribution
-asv_sample_dist <- asv_stats %>%
+taxonomic_units_sample_dist <- taxonomic_units_stats %>%
     group_by(n_samples) %>%
-    summarise(n_asv=n(),
+    summarise(n_taxonomic_units=n(),
               reads=sum(reads),
               reads_srs=sum(reads_srs, na.rm=T))
 
@@ -269,7 +340,7 @@ tax_tab1 <- community_matrix_l %>%
 
 tax_tab <- tax_tab1[,-1]
 rownames(tax_tab) <- tax_tab1[,1]
-saveRDS(tax_tab, "results/tax_tab.RDS")
+saveRDS(tax_tab, paste0("Results/",prefix,"_tax_tab.RDS"))
 
 print("taxonomic summary")
 ## how the information of communities of Cretan soils is distributed across 
@@ -283,55 +354,63 @@ taxonomy_levels_occurrences <- community_matrix_l %>%
     group_by(classification) %>%
     summarise(n_occurrences=n(),
               reads_srs=sum(reads_srs_sum, na.rm=T),
-              asvs=sum(asvs))
+              n_taxonomic_units=sum(n_taxonomic_units))
 
-write_delim(taxonomy_levels_occurrences,"results/taxonomy_levels_occurrences.tsv",delim="\t")
+write_delim(taxonomy_levels_occurrences,
+            paste0("Results/",prefix,"_taxonomy_levels_occurrences.tsv"),
+            delim="\t")
 ## Phyla distribution, average relative abundance and ubiquity
 
 phyla_samples_summary <- community_matrix_l %>%
     group_by(ENA_RUN,Phylum) %>%
-    summarise(asvs=sum(asvs),
+    summarise(n_taxonomic_units=sum(n_taxonomic_units),
               abundance_mean=mean(reads_srs_sum),
               abundance_sum=sum(reads_srs_sum), .groups="keep") %>%
     group_by(ENA_RUN) %>%
     mutate(relative_abundance=abundance_sum/sum(abundance_sum))
 #    na.omit(Phylum)
 
-write_delim(phyla_samples_summary,"results/phyla_samples_summary.tsv",delim="\t")
+write_delim(phyla_samples_summary,
+            paste0("Results/",prefix,"_phyla_samples_summary.tsv"),
+            delim="\t")
 
 ## phyla stats
 total_samples <- length(unique(community_matrix_l$ENA_RUN))
 phyla_stats <- phyla_samples_summary %>% 
     group_by(Phylum) %>%
     summarise(n_samples=n(),
-              total_asvs=sum(asvs),
+              total_taxonomic_units=sum(n_taxonomic_units),
               total_abundance=sum(abundance_sum),
               proportion_sample=n_samples/total_samples,
               average_relative=mean(relative_abundance)) %>%
     arrange(desc(average_relative))
 
-write_delim(phyla_stats,"results/phyla_stats.tsv",delim="\t")
+write_delim(phyla_stats,
+            paste0("Results/",prefix,"_phyla_stats.tsv"),
+            delim="\t")
 
 ## Genera stats
 
 genera_phyla_samples <- community_matrix_l %>%
     filter(!is.na(Genus)) %>%
     group_by(Phylum,Genus,ENA_RUN) %>%
-    summarise(asvs=sum(asvs),
+    summarise(n_taxonomic_units=sum(n_taxonomic_units),
               reads_srs_mean=mean(reads_srs_sum),
               reads_srs_sum=sum(reads_srs_sum), .groups="keep") %>%
     group_by(ENA_RUN) %>%
     mutate(relative_srs=reads_srs_sum/sum(reads_srs_sum)) %>%
     ungroup()
 
-write_delim(genera_phyla_samples,"results/genera_phyla_samples.tsv",delim="\t")
+write_delim(genera_phyla_samples,
+            paste0("Results/",prefix,"_genera_phyla_samples.tsv"),
+            delim="\t")
 
 genera_phyla_stats <- genera_phyla_samples %>%
     group_by(Phylum,Genus) %>%
     summarise(n_samples=n(),
               relative_abundance_mean=mean(relative_srs), 
               relative_abundance_sd=sd(relative_srs), 
-              total_asvs=sum(asvs),
+              total_taxonomic_units=sum(n_taxonomic_units),
               reads_srs_mean=mean(reads_srs_sum),
               reads_srs_sd=sd(reads_srs_sum),
               total_reads_srs=sum(reads_srs_sum),
@@ -340,7 +419,9 @@ genera_phyla_stats <- genera_phyla_samples %>%
     mutate(n_genera=n()) %>%
     arrange(desc(n_samples), desc(relative_abundance_mean))
 
-write_delim(genera_phyla_stats,"results/genera_phyla_stats.tsv",delim="\t")
+write_delim(genera_phyla_stats,
+            paste0("Results/",prefix,"_genera_phyla_stats.tsv"),
+            delim="\t")
 
 ################################ save network format ############################
 
@@ -351,7 +432,9 @@ network_genera_community_matrix <- community_matrix_l %>%
                 values_fill=0) %>%
     column_to_rownames("ENA_RUN")
 
-write_delim(network_genera_community_matrix,"results/network_genera_community_matrix.tsv",delim="\t")
+write_delim(network_genera_community_matrix,
+            paste0("Results/",prefix,"_gnetwork_genera_community_matrix.tsv"),
+            delim="\t")
 
 ##################################################################################
 
