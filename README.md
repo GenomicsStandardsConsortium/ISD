@@ -252,6 +252,10 @@ We used Python 3.11 and the following libraries
 * random
 * requests
 
+## Citation
+
+ISD Crete consortium
+
 ## Licence
 
 GNU GPLv3 license (for 3rd party scripts separate licenses apply).
