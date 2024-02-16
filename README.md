@@ -44,7 +44,7 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 * [Data retrieval](#data-retrieval)
 * [Data integration](#data-integration)
 * [Inference and Taxonomy](#inference-and-taxonomy)
-* [Analysis](#analysis)
+* [Biodiversity](#biodiversity)
 * [Software](#software)
 * [Hardware](#hardware)
 * [Citation](#citation)
@@ -196,7 +196,7 @@ to run on a FAT node of the ZORBAS HPC - IMBBC - HCMR.
 FAT node Specs : Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz, 40 CPUs, 503gb RAM
 OS = Debian 4.19.146-1
 
-## Analysis
+## Biodiversity
 
 Biodiversity analysis includes the following topics:
 
