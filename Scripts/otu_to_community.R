@@ -55,7 +55,7 @@ fasta <- data.frame(
   }))
 
 ##################################### taxonomy ###################################
-colnames <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+colnames <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 tax_tab_tmp <- abundance_table |>
     dplyr::select(OTU,taxonomy) |>
     separate(taxonomy,
