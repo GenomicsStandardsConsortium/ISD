@@ -6,8 +6,9 @@
 # framework: ISD Crete
 ###############################################################################
 # GOAL:
-# Aim of the script is to perform biodiversity and numerical ecology analysis
-# of the community matrix
+# Aim of the script is to perform biodiversity analysis of the community matrix
+# and provide sample metadata.
+# It is the intermediate step before the numerical ecology analysis.
 #
 ###############################################################################
 # OUTPUT:
@@ -29,6 +30,7 @@ library(tibble)
 library(readr)
 library(tidyr)
 library(SRS) # normalisation
+library(vegan)
 
 ################################## User input #################################
 # test if there is at least one argument: if not, return an error
@@ -152,7 +154,7 @@ biodiversity_srs <- SRS(crete_biodiversity_matrix_df,
 
 rownames(biodiversity_srs) <- rownames(crete_biodiversity_matrix_df)
 
-# how many samples don't have ASVs
+# how many samples don't have taxonomic units
 print("how many samples don't have ASVs/OTUs")
 length(which(colSums(biodiversity_srs)==0))
 # how many ASVs have 0 abundance after the SRS
@@ -298,9 +300,9 @@ write_delim(metadata_all,
             paste0("Results/",prefix,"_sample_metadata.tsv"),
             delim="\t")
 
-########################## ASV summary ###############################
+########################## taxonomic units summary ###############################
 print("Taxonomic summary")
-# Create taxonomy table of the remaining asvs
+# Create taxonomy table of the remaining taxonomic units
 
 taxonomic_units_stats <- crete_biodiversity |> 
     group_by(taxonomic_unit, classification, scientificName) |> 
@@ -321,9 +323,9 @@ singletons <- taxonomic_units_stats |>
     filter(reads==1) |>
     nrow()
 
-print(paste0("there are ",singletons," singletons asvs"))
+print(paste0("there are ",singletons," singletons"))
 
-## asv and samples distribution
+## taxonomic units and samples distribution
 taxonomic_units_sample_dist <- taxonomic_units_stats |>
     group_by(n_samples) |>
     summarise(n_taxonomic_units=n(),
