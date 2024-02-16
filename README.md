@@ -69,6 +69,56 @@ Then for each sample retrieve all attributes with the `get_isd_crete_2016_attrib
 script. These are all in `xml` format. Using the `ena_xml_to_csv.py` these files 
 are aggregated to an long format tsv file.
 
+### Structure
+
+Each `xml` file, i.e. each sample, has a total of 43 attributes which are 
+
+```
+source material identifiers
+organism
+total nitrogen method
+ENA-SUBMISSION
+geographic location (region and locality)
+environment (biome)
+total organic C method
+ENA-SUBMITTED-FILES
+ENA-EXPERIMENT
+ENA-FASTQ-FILES
+target subfragment
+common name
+total organic carbon
+DNA concentration
+vegetation zone
+total nitrogen
+soil environmental package
+environment (material)
+amount or size of sample collected
+geographic location (depth)
+environment (feature)
+ENA-LAST-UPDATE
+sample collection device or method
+place name
+ENA-FIRST-PUBLIC
+project name
+collection date
+target gene
+ENA-CHECKLIST
+geographic location (country and/or sea)
+ENA-STUDY
+pcr primers
+sequencing method
+water content method
+storage conditions (fresh/frozen/other)
+water content
+investigation type
+geographic location (elevation)
+sample volume or weight for DNA extraction
+geographic location (latitude)
+geographic location (longitude)
+current land use (emp 500 soil)
+ENA-RUN
+```
+
 ### Sequences
 
 To retrieve the sequences use the `get_isd_crete_2016_fastq.sh` script after
@@ -92,10 +142,84 @@ did an analysis.
 * filter locations to be in Crete, island
 * filter the metagenomic samples that are also terrestrial and visualise
 
+## Inference and Taxonomy
+We used PEMA and DADA2 for the clustering of OTUs and ASVs, respectively.
+
+### PEMA
+
+PEMA 2.1.5 incorporates state of the art tools for each step of the analysis.
+
+Filtering and quality - fastp
+OTU clastering - USEARCH
+Taxonomy assignement - Silva v132
+
+PEMA run in 21 hours using BATCH node, Intel(R) Xeon(R) CPU 2.60GHz, 20 threads,
+126 gb RAM memory.
+
+OS = Debian 4.19.146-1
+
+### DADA2
+DADA2 for our dataset required a total of 1121 minutes (18 hours, 41 minutes)
+to run on a FAT node of the ZORBAS HPC - IMBBC - HCMR.
+
+FAT node Specs : Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz, 40 CPUs, 503gb RAM
+OS = Debian 4.19.146-1
+
+## Analysis
+
+Biodiversity analysis includes the following topics:
+
+* Maps of Crete with samples and ENA all samples in Crete
+* OTUs with Silva 132 and ASVs with Silva 138 comparison of results
+* Taxonomic depth 
+* Representative phyla ratios differ in samples
+* Taxonomic profiling
+* Community matrices
+* Metadata as drivers of diversity indices
+* Ordination
+* Same site locations comparison – two sampling sites, at the same sampling
+location - Bray Curtis dissimilarity – supports treating the samples separately
+
 ## Hardware
 
 Most computations were performed in the Zorbas HPC facility of [IMBBC-HCMR](https://hpc.hcmr.gr),
 see here for more [info](https://doi.org/10.1093/gigascience/giab053).
+
+## Software
+
+### IMBBC HPC
+
+IMBBC HPC facility is based on SLURM, an example file of job submission is included
+in `Scripts` folder.
+
+### Conda environment
+
+In the IMBBC HPC facility we created `conda` environments for reproducibility and 
+flexibility of the tools installations.
+
+### Unix tools
+
+GAWK 5.3.0
+PEMA 2.1.5
+Conda/Bioconda 23.5.2
+
+### R
+We used R version 4.3.2 and the following packages:
+* DADA2
+* vegan
+* ape
+* tidyverse
+* sf
+
+And for visualisation the extra packages: UCIE, pheatmap, scales, ggpubr
+
+### Python
+We used Python 3.11 and the following libraries
+
+* ElementTree
+* csv
+* random
+* requests
 
 ## Licence
 
