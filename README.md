@@ -1,4 +1,26 @@
 # Island Sampling Day (ISD)
+
+The Island Sampling Day draws inspiration from the Ocean 
+Sampling Day that is a consortium that facilitates yearly samplings 
+in stations from all around the world. This has great applications 
+in monitoring and comprehending the 
+complexity of the ocean microbiome and it's drivers.
+
+The Island Sampling Day has been organised in two islands, Moorea 
+in the French Polynisia and Crete in Greece. 
+
+## Soil microbiome sampling
+
+The metagenomic revolution enabled environmental microbial biodiversity 
+studies which for the past 20 years, have sampled multiple local and 
+large scale regions (e.g. France microbiome, Earth Microbiome). These 
+studies indicated that microbes are omnipresent and impact global ecosystem 
+processes through their abundance, versatility and biotic interactions 
+(i.e. interactomes). Additionally, microbes influence the major nutrient
+cycles and ecosystem functions, such as plant and animal productivity. 
+Changes in the structure of microbial communities can be indicative of
+ecosystem tipping points e.g aridification.
+
 ## Chapter one: Crete
 
 ISD is a soil microbiome study to explore environmental drivers of community
@@ -6,18 +28,18 @@ composition across ecosystems in the island of Crete, Greece.
 
 A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 
-1. Put metadata into action through a citizen science project
-2. describe the first full island microbial community assessment
-3. shed light on phylotypes found not to be all the same across Crete’s distinct terrestrial habitats (<i>intra comparison</i>)
-4. present a “local” (island) vs “global” (world, e.g. EMP) soil phylotype comparative analysis (<i>inter comparison</i>)
+1. Put metadata into action through a citizen science project to demonstrate their value in future samplings
+2. Describe the first full island microbial community assessment
+3. Shed light on phylotypes found not to be all the same across Crete’s distinct terrestrial habitats (<i>intra comparison</i>)
+4. Present a “local” (island) vs “global” (world, e.g. EMP) soil phylotype comparative analysis (<i>inter comparison</i>)
 
 This repository holds ISD molecular ecology analysis pertinent scripts.
 ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/view/PRJEB21776" target="blank">European Nucleotide Archive repository project</a>.
 
 ## Contents
 
-* [Sampling](#sampling)
 * [Methods](#methods)
+* [Sampling](#sampling)
 * [Scripts](#scripts)
 * [Data retrieval](#data-retrieval)
 * [Data integration](#data-integration)
@@ -27,6 +49,15 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 * [Hardware](#hardware)
 * [Citation](#citation)
 * [Licence](#licence)
+
+## Methods
+
+* Sampling
+* MTA and soil permits
+* DNA extraction and amplification
+* Sequencing
+* Soil physical chemistry
+* Bioinformatics and Ecological analysis
 
 ## Sampling
 
