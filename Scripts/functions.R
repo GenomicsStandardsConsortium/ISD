@@ -44,9 +44,11 @@ dist_long <- function(x,method){
     return(df)
 }
 
-boxplot_single <- function(dataset, x_axis, y_axis, color){
+boxplot_single <- function(dataset, x_axis, y_axis, color, prefix){
     
-    plotname <- paste0("figures/",
+    plotname <- paste0("Figures/",
+                       prefix,
+                       "_",
                        "ordination_",
                        x_axis,
                        "_",
@@ -79,8 +81,10 @@ boxplot_single <- function(dataset, x_axis, y_axis, color){
 }
 
 ## function
-diversity_boxplot <- function(dataset, x_axis, y_axis, grouping_var){
-    plotname <- paste0("figures/",
+diversity_boxplot <- function(dataset, x_axis, y_axis, grouping_var, prefix){
+    plotname <- paste0("Figures/",
+                       prefix,
+                       "_",
                        grouping_var,
                        "_",
                        x_axis,
@@ -114,14 +118,16 @@ diversity_boxplot <- function(dataset, x_axis, y_axis, grouping_var){
            units="cm")
 }
 
-gradient_scatterplot <- function(dataset, x_axis, y_axis, grouping_var){
+gradient_scatterplot <- function(dataset, x_axis, y_axis, grouping_var,prefix){
     
     ## the dataset must be a dataframe, not a tibble, the colnames
     ## must characters
 
     ## keep the character names of column names to pass to plot
     ##
-    plotname <- paste0("figures/",
+    plotname <- paste0("Figures/",
+                       prefix,
+                       "_",
                        y_axis,
                        "_",
                        x_axis,
@@ -170,7 +176,7 @@ gradient_scatterplot <- function(dataset, x_axis, y_axis, grouping_var){
 }
 
 
-ordination_sites_plot <- function(df,col,x_axis,y_axis,method, color){
+ordination_sites_plot <- function(df,col,x_axis,y_axis,method, color, prefix){
     
     shapes <- length(unique(df[[col]]))
     print(shapes)
@@ -185,7 +191,7 @@ ordination_sites_plot <- function(df,col,x_axis,y_axis,method, color){
         coord_fixed() +
         theme_bw()
 
-    ggsave(paste0("figures/ordination_",method,"_sites_plot_",col,".png"),
+    ggsave(paste0("Figures/",prefix,"_ordination_",method,"_sites_plot_",col,".png"),
         plot=sites_plot,
         device="png",
         height = 20,
