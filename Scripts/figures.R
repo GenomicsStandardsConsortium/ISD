@@ -52,7 +52,7 @@ if (length(args)==0) {
 } 
 
 prefix <- args[1]
-prefix <- "otu"
+#prefix <- "otu"
 ################################## Load data ##################################
 ## biodiversity
 community_matrix_l <- read_delim(paste0("Results/",prefix,"_community_matrix_l.tsv"),delim="\t")
@@ -105,7 +105,7 @@ pcoa_isd_sites <- read_delim(paste0("Results/",prefix,"_ordination_pcoa_bray_sit
 
 pcoa_isd_sites_ucie <- ucie::data2cielab(pcoa_isd_sites, LAB_coordinates = F)
 colnames(pcoa_isd_sites_ucie) <- c("ENA_RUN","UCIE")
-write_delim(pcoa_isd_sites_ucie,paste0("Results/",prefix,"pcoa_isd_sites_ucie.tsv"), delim="\t")
+write_delim(pcoa_isd_sites_ucie,paste0("Results/",prefix,"_pcoa_isd_sites_ucie.tsv"), delim="\t")
 #pcoa_isd_sites_ucie <- read_delim("Results/pcoa_isd_sites_ucie.tsv")
 
 ############################# ucie to location data ####################

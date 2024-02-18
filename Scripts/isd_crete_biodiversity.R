@@ -22,7 +22,8 @@
 # RUNNING TIME: 9 minutes
 ###############################################################################
 # usage:
-# ./Scripts/isd_crete_biodiversity.R Results/crete_biodiversity_otu.tsv "OTU"
+# ./Scripts/isd_crete_biodiversity.R Results/crete_biodiversity_otu.tsv "otu"
+# ./Scripts/isd_crete_biodiversity.R Results/crete_biodiversity_asv.tsv "asv"
 ###############################################################################
 source("Scripts/functions.R")
 library(dplyr)
