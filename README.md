@@ -230,9 +230,9 @@ flexibility of the tools installations.
 
 ### Unix tools
 
-GAWK 5.3.0
-PEMA 2.1.5
-Conda/Bioconda 23.5.2
+* GAWK 5.3.0
+* PEMA 2.1.5
+* Conda/Bioconda 23.5.2
 
 ### R
 We used R version 4.3.2 and the following packages:
