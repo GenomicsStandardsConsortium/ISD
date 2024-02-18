@@ -79,6 +79,7 @@ metadata_wide$longitude <- as.numeric(metadata_wide$`geographic_location_(longit
 metadata_wide$elevation <- as.numeric(metadata_wide$`geographic_location_(elevation)`)
 metadata_wide$amount_or_size_of_sample_collected <- as.numeric(metadata_wide$amount_or_size_of_sample_collected)
 
+
 metadata <- metadata_wide |>
     dplyr::select(ENA_RUN, source_material_identifiers, total_nitrogen, water_content,total_organic_carbon,sample_volume_or_weight_for_DNA_extraction,DNA_concentration,latitude, longitude,elevation, amount_or_size_of_sample_collected, vegetation_zone) |>
     arrange(ENA_RUN) |>
@@ -87,6 +88,12 @@ metadata <- metadata_wide |>
 ## location pairs of each site
 metadata$sites <- gsub("_loc_*.","", metadata$source_material_identifiers)
 metadata$location <- gsub(".*(loc_.*)","\\1", metadata$source_material_identifiers)
+
+## elevation bins
+
+metadata$elevation_bin <- cut(metadata$elevation, 
+                             breaks=seq.int(from=0, to=2500, by=200),
+                             dig.lab = 5 )
 
 ## C:N ratio
 ## Six samples have 0 total_nitrogen. So to avoid the inf 
@@ -433,7 +440,7 @@ network_genera_community_matrix <- community_matrix_l |>
     column_to_rownames("ENA_RUN")
 
 write_delim(network_genera_community_matrix,
-            paste0("Results/",prefix,"_gnetwork_genera_community_matrix.tsv"),
+            paste0("Results/",prefix,"_network_genera_community_matrix.tsv"),
             delim="\t")
 
 ##################################################################################
