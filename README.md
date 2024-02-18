@@ -236,21 +236,28 @@ Conda/Bioconda 23.5.2
 
 ### R
 We used R version 4.3.2 and the following packages:
-* DADA2
-* vegan
-* ape
-* tidyverse
-* sf
+* DADA2 1.28.0
+* vegan 2.6-4
+* ape 5.7-1
+* tidyverse 2.0.0
+* sf 1.0-14
 
-And for visualisation the extra packages: UCIE, pheatmap, scales, ggpubr
+And for visualisation the extra packages:
+* UCIE 1.0.2
+* pheatmap 1.0.12
+* scales 1.3.0
+* ggpubr 0.6.0
 
 ### Python
-We used Python 3.11 and the following libraries
+We used Python 3.11 and the following modules/libraries:
 
-* ElementTree
-* csv
+* xml.etree.ElementTree 1.3.0
+* csv 1.0
 * random
-* requests
+* requests 2.31.0
+* pandas 2.1.1
+* numpy 1.24.4
+* umap-learn 0.5.4
 
 ## Citation
 
