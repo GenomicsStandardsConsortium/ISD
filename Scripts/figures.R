@@ -52,7 +52,6 @@ if (length(args)==0) {
 } 
 
 prefix <- args[1]
-#prefix <- "otu"
 ################################## Load data ##################################
 ## biodiversity
 community_matrix_l <- read_delim(paste0("Results/",prefix,"_community_matrix_l.tsv"),delim="\t")
@@ -64,7 +63,11 @@ metadata <- read_delim(paste0("Results/",prefix,"_sample_metadata.tsv"), delim="
 metadata$elevation_bin <- factor(metadata$elevation_bin,
                         levels=unique(metadata$elevation_bin)[order(sort(unique(metadata$elevation_bin)))])
 
-#samples_ucie_nmds_genera <- read_delim("Results/samples_ucie_nmds_genera.tsv")
+# For interactive use uncomment:
+community_matrix_l <- read_delim("Results/otu_community_matrix_l.tsv", delim="\t")
+community_matrix_l <- read_delim("Results/asv_community_matrix_l.tsv", delim="\t")
+metadata <- read_delim("Results/asv_sample_metadata.tsv", delim="\t")
+prefix <- "asv"
 
 ## spatial
 locations_spatial <- metadata %>%
@@ -246,6 +249,16 @@ ggsave("Figures/map_crete_routes.tiff",
 
 ggsave("Figures/map_crete_routes.png",
        plot=crete_base,
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="png")
+
+
+crete_base_tr <- crete_base + theme(plot.background = element_rect(fill='transparent', color=NA))
+ggsave("Figures/map_crete_routes_tr.png",
+       plot=crete_base_tr,
        height = 20,
        width = 40,
        dpi = 300,
