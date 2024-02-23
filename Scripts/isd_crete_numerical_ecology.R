@@ -46,8 +46,9 @@ prefix <- args[3]
 print("community matrix")
 
 #community_matrix_l <- read_delim("Results/otu_community_matrix_l.tsv", delim="\t")
-#metadata <- read_delim("Results/otu_sample_metadata.tsv", delim="\t")
-#prefix <- "otu"
+#metadata <- read_delim("Results/asv_sample_metadata.tsv", delim="\t")
+#prefix <- "asv"
+
 
 ######################################community matrix##########################
 community_matrix <- community_matrix_l |>
