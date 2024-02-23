@@ -84,6 +84,11 @@ The scripts of the analysis are in the `Scripts` folder and cover the following 
 * Biodiversity analysis
 * Figures
 
+The bioinformatic workflow can be summarized to : GET, INFER and ANALYZE as 
+shown below:
+
+![ISD Crete bioinformatic workflow](isd_crete_flowchart.png)
+
 ## Data retrieval
 
 ### Metadata
