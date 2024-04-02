@@ -7,7 +7,13 @@ in monitoring and comprehending the
 complexity of the ocean microbiome and it's drivers.
 
 The Island Sampling Day has been organised in two islands, Moorea 
-in the French Polynisia and Crete in Greece. 
+in the French Polynisia and Crete in Greece. The Moorea sampling took 
+place in March 2022 (in the context of [GSC22](https://genomicsstandardsconsortium.github.io/GSC22-Moorea/program.html).
+In Crete, two sampling events have taken place: the first one in 2016 
+(in the context of [GSC18](https://www.gensc.org/pages/meetings/GSC18/GSC18.html)), 
+and the second one in 2022. For both sampling events more information can be cound [here](https://lab42open-team.github.io/isd-crete-website/)
+
+Most of the content that follows relates to the Crete 2016 Island Sampling Day.
 
 ## Soil microbiome sampling
 
@@ -21,7 +27,7 @@ cycles and ecosystem functions, such as plant and animal productivity.
 Changes in the structure of microbial communities can be indicative of
 ecosystem tipping points e.g aridification.
 
-## Chapter one: Crete
+## Chapter one: Crete 2016
 
 ISD is a soil microbiome study to explore environmental drivers of community
 composition across ecosystems in the island of Crete, Greece.
