@@ -7,11 +7,11 @@ in monitoring and comprehending the
 complexity of the ocean microbiome and it's drivers.
 
 The Island Sampling Day has been organised in two islands, Moorea 
-in the French Polynisia and Crete in Greece. The Moorea sampling took 
+in the French Polynisia and Crete in Greece. The Moorea sampling day event took 
 place in March 2022 (in the context of [GSC22](https://genomicsstandardsconsortium.github.io/GSC22-Moorea/program.html).
-In Crete, two sampling events have taken place: the first one in 2016 
+In Crete, two sampling events have taken place: the first one in June 2016 
 (in the context of [GSC18](https://www.gensc.org/pages/meetings/GSC18/GSC18.html)), 
-and the second one in 2022. For both sampling events more information can be cound [here](https://lab42open-team.github.io/isd-crete-website/)
+and the second one in July 2022. For both sampling events more information can be cound [here](https://lab42open-team.github.io/isd-crete-website/).
 
 Most of the content that follows relates to the Crete 2016 Island Sampling Day.
 
