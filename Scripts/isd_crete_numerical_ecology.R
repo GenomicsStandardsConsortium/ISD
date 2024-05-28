@@ -27,8 +27,9 @@ library(tibble)
 library(readr)
 library(tidyr)
 library(ggplot2)
-
+library(dendextend) 
 ################################## User input #################################
+args = c("Results/asv_community_matrix_l.tsv", "Results/asv_sample_metadata.tsv","asv")
 # test if there is at least one argument: if not, return an error
 args = commandArgs(trailingOnly=TRUE)
 
@@ -72,13 +73,39 @@ metadata <- metadata |> filter(ENA_RUN %in% rownames(community_matrix))
 ### 
 print("samples with highest values of physicochemical properties")
 metadata |> arrange(desc(total_nitrogen)) |> head(n=2) # ERR3697708 , ERR3697732
-metadata |> arrange(desc(total_organic_carbon)) |> head(n=10) # ERR3697655, ERR3697675
+metadata |>
+    dplyr::select(ENA_RUN, source_material_identifiers, total_organic_carbon) |>
+    arrange(desc(total_organic_carbon)) |> head(n=10) # ERR3697655, ERR3697675
 metadata |> arrange(desc(water_content)) |> head(n=2) ## ERR3697703, ERR3697702 
-
+metadata |>
+    dplyr::select(ENA_RUN, source_material_identifiers,shannon, taxa,n_taxonomic_units) |>
+    arrange(desc(shannon)) |>
+    head(n=2) ## ERR3697693 isd_3_site_4_loc_2, ERR3697675 isd_2_site_5_loc_2 4.57  4.56
+metadata |>
+    dplyr::select(ENA_RUN, source_material_identifiers,shannon, taxa,n_taxonomic_units) |>
+    arrange(desc(n_taxonomic_units)) |> head(n=2) #ERR3697759 isd_7_site_8_loc_2 1075, ERR3697765 isd_7_site_11_loc_2, 1051
+metadata |>
+    dplyr::select(ENA_RUN, source_material_identifiers,shannon, taxa,n_taxonomic_units) |>
+    arrange(desc(taxa)) |>
+    head(n=2) # ERR3697703 isd_4_site_5_loc_2 871, ERR3697702 isd_4_site_5_loc_1 869
 ################################# Metadata correlations #############################
 # correlations of diversity and other numerical metadata
 with(metadata, cor(shannon, water_content))
+with(metadata, cor(taxa, water_content))
+with(metadata, cor(n_taxonomic_units, water_content))
+with(metadata, cor(shannon, total_organic_carbon))
+with(metadata, cor(taxa, total_organic_carbon))
+with(metadata, cor(n_taxonomic_units, total_organic_carbon))
+with(metadata, cor(shannon, total_nitrogen))
+with(metadata, cor(taxa, total_nitrogen))
+with(metadata, cor(n_taxonomic_units, total_nitrogen))
+with(metadata, cor(shannon, elevation))
+with(metadata, cor(taxa, elevation))
+with(metadata, cor(n_taxonomic_units, elevation))
 
+with(metadata, cor.test(n_taxonomic_units, total_organic_carbon))
+with(metadata, cor.test(taxa, water_content))
+with(metadata, cor.test(taxa, elevation)) 
 
 metadata_n <- metadata
 rownames(metadata_n) <- metadata$ENA_RUN
@@ -105,15 +132,20 @@ print("(dis)similarities")
 
 bray <- vegdist(community_matrix,
                 method="bray")
+hc <- hclust(bray)
+dend <- as.dendrogram(hc) |>
+    color_branches(k = 6) |>
+    color_labels(k = 6)
 
 png(file=paste0("Figures/", prefix, "_clustering_bray_hclust_samples.png"),
-    width = 50,
-    height = 30,
+    width = 55,
+    height = 20,
     res=300,
     units = "cm",
     bg="white")
-plot(hclust(bray))
+plot(dend)
 dev.off()
+
 
 bray_tax <- vegdist(t(community_matrix),method="bray")
 
