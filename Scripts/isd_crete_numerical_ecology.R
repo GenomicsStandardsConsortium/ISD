@@ -29,7 +29,7 @@ library(tidyr)
 library(ggplot2)
 library(dendextend) 
 ################################## User input #################################
-args = c("Results/asv_community_matrix_l.tsv", "Results/asv_sample_metadata.tsv","asv")
+#args = c("Results/asv_community_matrix_l.tsv", "Results/asv_sample_metadata.tsv","asv")
 # test if there is at least one argument: if not, return an error
 args = commandArgs(trailingOnly=TRUE)
 
