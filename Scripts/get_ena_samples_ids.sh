@@ -45,8 +45,6 @@ echo $directory
 ##################################### Start of script ##########################
 # keep the first column of the file with the project ids
 
-conda activate base
-
 runs_accession=`cut -f 1 $projects_file`
 
 # ENA API url prefix and suffix

@@ -19,7 +19,8 @@ import os,sys
 # Directory containing the XML files
 xml_dir = sys.argv[1]
 # Output TSV file
-output_file = sys.argv[2]
+output_file = str(sys.argv[2])
+print(output_file)
 
 # List to store the extracted data
 data = []
@@ -113,5 +114,6 @@ with open(output_file, 'w', newline='') as tsvfile:
         for attrib in attribs:
 
             writer.writerow([str(filename)] + attrib)
-            
-print(f"Conversion complete. The TSV file '{output_file}' has been created.")
+
+
+print("Conversion complete. The TSV file " +  output_file +" has been created.")
