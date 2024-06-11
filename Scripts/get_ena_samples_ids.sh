@@ -45,6 +45,8 @@ echo $directory
 ##################################### Start of script ##########################
 # keep the first column of the file with the project ids
 
+conda activate base
+
 runs_accession=`cut -f 1 $projects_file`
 
 # ENA API url prefix and suffix
@@ -69,10 +71,10 @@ do
 
     # get the xml files
     echo "project sample attributes retrieving"
-    ../scripts/get_ena_samples_attributes.py $metadata $i/ena_samples_attr
+    ../Scripts/get_ena_samples_attributes.py $metadata $i/ena_samples_attr
 
     # transform the xml files
-    ../scripts/ena_xml_to_csv.py $i/ena_samples_attr $i/ena_samples_attributes-$i.tsv
+    ../Scripts/ena_xml_to_csv.py $i/ena_samples_attr $i/ena_samples_attributes-$i.tsv
 
     
     sleep 2

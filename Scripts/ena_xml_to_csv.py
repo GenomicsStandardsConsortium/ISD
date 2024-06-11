@@ -9,17 +9,17 @@
 # Aim of this script is to transform the xml available attributes from 
 # ENA assigned to each sample of ISD Crete 2016 to csv.
 ###############################################################################
-# usage:./scripts/ena_xml_to_csv.py
+# usage:./Scripts/ena_xml_to_csv.py path/to/xml file.tsv
 ###############################################################################
 import xml.etree.ElementTree as ET
 import csv
 import os,sys
 
+# user input
 # Directory containing the XML files
-xml_dir = 'Data/Metadata/ena_samples_attr/'
-
+xml_dir = sys.argv[1]
 # Output TSV file
-output_file = 'Data/Metadata/ena_isd_2016_attributes.tsv'
+output_file = sys.argv[2]
 
 # List to store the extracted data
 data = []
@@ -53,6 +53,7 @@ def groub_xml_elements(xml_list,tag):
 for filename in os.listdir(xml_dir):
     if filename.endswith('.xml'):
         # Parse the XML file
+        print(filename)
         
         tree = ET.parse(os.path.join(xml_dir, filename))
         root = tree.getroot()

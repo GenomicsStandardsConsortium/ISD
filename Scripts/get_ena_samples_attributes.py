@@ -78,7 +78,7 @@ print("there are " + str(len(samples)) + " samples accession ids")
 ## Iterate and make the GET requests to server
 
 for a in samples:
-    accession = a[0]
+    accession = a[2]
     
     attributes = attr_request(accession)
     if attributes != None:
