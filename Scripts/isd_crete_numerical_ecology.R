@@ -146,6 +146,14 @@ png(file=paste0("Figures/", prefix, "_clustering_bray_hclust_samples.png"),
 plot(dend)
 dev.off()
 
+samples_clusters <- as.tibble(as.ggdend(dend)$labels) |>
+    dplyr::select(-c(x,y,cex)) 
+
+colnames(samples_clusters) <- c("ENA_RUN", "dend_cluster_color")
+
+write_delim(samples_clusters,paste0("Results/",prefix,"_samples_dend_clusters.tsv"),delim="\t")
+
+## for taxa
 
 bray_tax <- vegdist(t(community_matrix),method="bray")
 

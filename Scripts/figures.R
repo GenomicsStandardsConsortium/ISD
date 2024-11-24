@@ -52,6 +52,7 @@ if (length(args)==0) {
 } 
 
 prefix <- args[1]
+# prefix <- "asv"
 ################################## Load data ##################################
 ## biodiversity
 community_matrix_l <- read_delim(paste0("Results/",prefix,"_community_matrix_l.tsv"),delim="\t")
@@ -65,15 +66,19 @@ metadata$elevation_bin <- factor(metadata$elevation_bin,
 
 # For interactive use uncomment:
 community_matrix_l <- read_delim("Results/asv_community_matrix_l.tsv", delim="\t")
-metadata <- read_delim("Results/asv_sample_metadata.tsv", delim="\t")
-prefix <- "asv"
+
+samples_clusters <- read_delim(paste0("Results/",prefix,"_samples_dend_clusters.tsv"), delim="\t")
+
+#metadata <- read_delim("Results/asv_sample_metadata.tsv", delim="\t")
 
 ## spatial
-locations_spatial <- metadata %>%
+locations_spatial <- metadata |>
+    left_join(samples_clusters) |>
     st_as_sf(coords=c("longitude", "latitude"),
              remove=F,
              crs="WGS84")
 
+locations_spatial$dend_cluster_color[is.na(locations_spatial$dend_cluster_color)] <- "gray" 
 crete_shp <- sf::st_read("Data/crete/crete.shp")
 #crete_peaks <- read_delim("spatial_data/crete_mountain_peaks.csv", delim=";", col_names=T) %>%
 #    st_as_sf(coords=c("X", "Y"),
@@ -306,6 +311,47 @@ ggsave("Figures/map_fig1-small.png",
        dpi = 300, 
        units="cm",
        device="png")
+
+
+crete_dend_clusters <- ggplot() +
+    geom_sf(crete_shp, mapping=aes()) +
+    geom_point(locations_spatial,
+            mapping=aes(x=longitude,
+                        y=latitude,
+                        color=dend_cluster_color),
+            alpha=0.4,
+            size=5,
+            show.legend=F) +
+    geom_jitter(width = 0.25, height = 0.25)+
+    #scale_color_manual(values=unique(locations_spatial$dend_cluster_color), guide="none")+
+    coord_sf(crs="wgs84") +
+    theme_bw()+
+    theme(
+#        panel.background = element_rect(fill='transparent'), #transparent panel bg
+        panel.border = element_blank(),
+        plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+        panel.grid.major = element_blank(), #remove major gridlines
+        panel.grid.minor = element_blank(), #remove minor gridlines
+        legend.background = element_rect(fill='transparent'), #transparent legend bg
+        legend.box.background = element_rect(fill='transparent'), #transparent legend panel
+        line = element_blank(),
+        axis.title=element_blank(),
+        axis.text=element_blank(),
+        legend.text=element_text(size=8),
+        legend.title = element_text(size=8),
+        legend.position = "bottom")
+
+
+ggsave("Figures/map_crete_dend_cluster.png",
+       plot=crete_dend_clusters,
+       bg='transparent',
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="png")
+
+
 
 
 ################################# 2. Taxonomy #####################################
