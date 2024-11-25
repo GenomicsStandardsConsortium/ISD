@@ -313,17 +313,28 @@ ggsave("Figures/map_fig1-small.png",
        device="png")
 
 
+dend_clusters <- c("#CC476B"="#CC476B",
+                   "#9F7000"="#9F7000",
+                   "#228B00"="#228B00",
+                   "#009681"="#009681",
+                   "#0082CE"="#0082CE",
+                   "#B646C7"="#B646C7",
+                   "gray"   ="gray"   )
+
+locations_spatial$dend_cluster_color <- factor(locations_spatial$dend_cluster_color,
+                        levels=unique(locations_spatial$dend_cluster_color)[order(sort(unique(locations_spatial$dend_cluster_color)))])
+
 crete_dend_clusters <- ggplot() +
     geom_sf(crete_shp, mapping=aes()) +
     geom_point(locations_spatial,
             mapping=aes(x=longitude,
                         y=latitude,
                         color=dend_cluster_color),
-            alpha=0.4,
+            alpha=0.6,
             size=5,
             show.legend=F) +
     geom_jitter(width = 0.25, height = 0.25)+
-    #scale_color_manual(values=unique(locations_spatial$dend_cluster_color), guide="none")+
+    scale_color_manual(values=dend_clusters)+
     coord_sf(crs="wgs84") +
     theme_bw()+
     theme(
@@ -350,8 +361,6 @@ ggsave("Figures/map_crete_dend_cluster.png",
        dpi = 300,
        units="cm",
        device="png")
-
-
 
 
 ################################# 2. Taxonomy #####################################
