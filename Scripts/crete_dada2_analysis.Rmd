@@ -1,0 +1,710 @@
+---
+title: "Crete_post_dada2_analysis"
+output: html_notebook
+author: Johanna B. Holm, PhD, University of Maryland School of Medicine, Institute for Genome Sciences
+date: 25Jul2024
+editor_options: 
+  chunk_output_type: console
+---
+
+# Date
+```{r}
+today <- strsplit(date(), " ")
+month <- today[[1]][2]
+if(today[[1]][3] %in% ""){
+    day <- today[[1]][4]
+    year <- today[[1]][6]
+    }else{
+    day <- today[[1]][3]
+    year <- today[[1]][5]
+    }
+today2 <- paste(day,month,year, sep="")
+```
+
+#Packages
+```{r}
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+theme_set(theme_bw())
+require(table1)
+require(vegan)
+require(ape)
+require(ggpubr)
+
+pvalue <- function(x, ...) {
+# Construct vectors of data y, and groups (strata) g
+y <- unlist(x)
+g <- factor(rep(1:length(x), times=sapply(x, length)))
+if (is.numeric(y))  {
+if (length(table(g)) == 2){
+# For numeric variables, perform a standard 2-sample t-test
+p <- t.test(y ~ g)$p.value
+}
+if (length(table(g)) > 2){
+# For numeric variables, perform a kruskal.test
+p <- kruskal.test(y ~ g)$p.value
+}
+} else {
+# For categorical variables, perform a chi-squared test of independence
+p <- chisq.test(table(y, g))$p.value
+}
+# Format the p-value, using an HTML entity for the less-than sign.
+# The initial empty string places the output on the line below the variable label.
+c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
+}
+
+```
+
+# TAXONOMY
+```{r}
+# require(dada2)
+# require(phyloseq)
+# require(stringr)
+# 
+# seqtab.nochim<-readRDS("all_runs_dada2_abundance_table.rds")
+# taxa <- assignTaxonomy(seqtab.nochim, "silva_nr_v123_train_set/silva_nr_v123_train_set.fa.gz", multithread=TRUE, tryRC = TRUE)
+# taxa <- addSpecies(taxa, "silva_nr_v123_train_set/silva_species_assignment_v123.fa.gz", tryRC = TRUE)
+# taxa.print <- taxa # Removing sequence rownames for display only
+# rownames(taxa.print) <- NULL
+# head(taxa.print)
+# # saveRDS(taxa, "taxa.RDS")
+# 
+# #taxa<-readRDS("taxa_17Nov2022.RDS")
+# ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+#                tax_table(taxa))
+# 
+# #tax <- data.frame(tax_table(ps))
+# tax<-as.data.frame(taxa)
+# tax.clean <- data.frame(row.names = row.names(tax),
+# Kingdom = str_replace(tax[,1], "D_0__",""),
+# Phylum = str_replace(tax[,2], "D_1__",""),
+# Class = str_replace(tax[,3], "D_2__",""),
+# Order = str_replace(tax[,4], "D_3__",""),
+# Family = str_replace(tax[,5], "D_4__",""),
+# Genus = str_replace(tax[,6], "D_5__",""),
+# #Species = str_replace(tax[,7], "D_6__",""),
+# stringsAsFactors = FALSE)
+# tax.clean[is.na(tax.clean)] <- ""
+# 
+# for (i in 1:6){ tax.clean[,i] <- as.character(tax.clean[,i])}
+# ####### Fill holes in the tax table
+# tax.clean[is.na(tax.clean)] <- ""
+# for (i in 1:nrow(tax.clean)){
+# 
+# #Fill in missing taxonomy
+# 
+# if (tax.clean[i,2] == ""){
+# kingdom <- paste("d_", tax.clean[i,1], sep = "")
+# tax.clean[i, 2:6] <- kingdom
+# } else if (tax.clean[i,3] == ""){
+# phylum <- paste("p_", tax.clean[i,2], sep = "")
+# tax.clean[i, 3:6] <- phylum
+# } else if (tax.clean[i,4] == ""){
+# class <- paste("c_", tax.clean[i,3], sep = "")
+# tax.clean[i, 4:6] <- class
+# } else if (tax.clean[i,5] == ""){
+# order <- paste("o_", tax.clean[i,4], sep = "")
+# tax.clean[i, 5:6] <- order
+# } else if (tax.clean[i,6] == ""){
+# family <- paste("f_", tax.clean[i,5], sep = "")
+# tax.clean[i, 6:6] <- family
+# } else if (tax.clean[i,6] == ""){
+# tax.clean$Species[i] <- paste("g",tax.clean$Genus[i], sep = "_")
+# }#else if (str_detect(substr(tax.clean[i,7], start = 1, stop = 1), "^[:upper:]+$") == "FALSE"){
+# #tax.clean$Species[i] <- paste(tax.clean$Genus[i],tax.clean$Species[i], sep = "_")
+# }
+# 
+# tax_table(ps) <- as.matrix(tax.clean)
+# # How many genera would be present after filtering?
+# length(get_taxa_unique(ps, taxonomic.rank = "Genus"))
+# 
+# ## [1] 2247
+# ps1 = tax_glom(ps, taxrank = "Genus", NArm = TRUE)
+# #saveRDS(ps1, "tax_converge_count_table.RDS")
+# taxa<-as.data.frame(tax_table(ps1))
+# seq<-as.data.frame(otu_table(ps1))
+# names(seq)<-taxa[,6]
+# seq$sampleID<-gsub("X", "", rownames(seq))
+# #write.csv(seq, "Crete_ASV_countTable_silva_nr99_v138.csv", quote=F, row.names=F)
+```
+
+
+#Read in data
+```{r}
+setwd("~/Dropbox (IGS)/Crete/")
+count<-read.csv("Crete_ASV_countTable_silva_nr99_v138.csv", header=TRUE)
+#count<-seq
+rownames(count)<-count$sampleID
+count$sampleID<-NULL
+count[is.na(count)]<-0
+
+meta<-read.csv("Composite_MetaData_from_master.csv", header=TRUE)
+meta$sampleID1<-paste("s_", meta$sampleID, sep="")
+meta$Vegetation.Zone<-factor(meta$Vegetation.Zone, levels=c("coastal and littoral", "lowland", "sub-mountainous", "mountainous"), labels = c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
+```
+
+```{r Deal w/ controls}
+pp<-count[grepl("PCRPOS", rownames(count)), ]
+pp$sampleID<-rownames(pp)
+pp.m<-melt(pp, id.vars="sampleID", variable.name="Taxon", value.name="value")
+ggplot(pp.m[pp.m$value > 500, ], aes(x=reorder(Taxon, -value), y=value, fill=sampleID))+geom_bar(stat="identity", position="stack")+theme(legend.position="top", legend.title = NULL, axis.text.x=element_text(angle=45, size=6, hjust=1))+xlab(NULL)+ylab("Log10 Number of Reads")+scale_y_log10()
+
+ne<-count[grepl("NTC", rownames(count)), ]
+pn<-count[grepl("PCRNEG", rownames(count)), ]
+
+nc<-rbind(ne, pn)
+nc.rs<-as.matrix(rowSums(nc[,2:1039]))
+nrow(nc.rs)
+colnames(nc.rs)<-c("nReads")
+hist(nc.rs, main = "Distribution of nReads in negative controls (Crete)", xlab = "log10(nReads/ctrl)")
+
+nc$sampleID<-rownames(nc)
+nc.m<-melt(nc, id.vars="sampleID", variable.name="Taxon", value.name="value")
+ggplot(nc.m[nc.m$value > 0, ], aes(x=Taxon, y=value, fill=sampleID))+geom_bar(stat="identity", position="stack")+theme(legend.position="top", legend.title = NULL, axis.text.x=element_text(angle=45, size=6, hjust=1))+xlab(NULL)+ylab("Number of Reads")
+
+count.s<-count[!rownames(count) %in% c(rownames(ne), rownames(pn), rownames(pp)), ]
+rownames(count.s)<-paste("s_", rownames(count.s), sep="")
+```
+FIGURE 2: TAXA OBSERVED IN NEGATIVE CONTROLS AT > 100 READS - ONLY CONTROLS W/THESE ABUNDANCES WERE EXT.NEGATIVES
+There is evidence of barcode hopping (Lactobacillus & Gardnerella)
+
+```{r}
+#pseuds<-colnames(count.s[, grep("Pseudomonas", colnames(count.s))])
+#drop<-c("Escherichia_Shigella","d_Bacteria")
+drop<-c("d_","d_Bacteria", "Escherichia_Shigella")
+count.s<-count.s[, !(names(count.s)) %in% drop ] ## resulting in 2,248 taxa 
+```
+
+Don't remove any taxa by prevalence (not testing for taxa-specific associations)
+```{r}
+# print("nTaxa before filtering")
+# ncol(count.s)-1
+# print("Mean nReads per sample before taxon removal")
+# mean(rowSums(count.s))
+# 
+# pr.min.0.01<-nrow(count.s)*0.01
+# count.tx.0.01<-apply(count.s, 2, function(c)sum(c!=0)>pr.min.0.01) ## requires presence in at least 2 samples. 
+# print("nTaxa prevalent > 1% samples")
+# sum(count.tx.0.01 == "TRUE")
+# 
+# count.s.f<-count.s[,count.tx.0.01 == "TRUE"] ## resulting in 1,810 taxa
+# mean(rowSums(count.s.f[,2:ncol(count.s.f)]))
+# hist(log10(rowSums(count.s.f[,2:ncol(count.s.f)])))
+count.s.f<-count.s
+```
+
+Now filter out samples by total number of reads -- how many reads? Run the following to get an idea of the number of samples remaining if the cutoff is chosen at 1000, 2500, or 5000. I tend to lean towards keeping more samples - but a normal distribution would be nice
+```{r}
+print("Number of Samples")
+nrow(count.s.f)
+rS<-as.matrix(rowSums(count.s.f[,2:ncol(count.s.f)]))
+rownames(rS)<-count.s.f$sampleID
+colnames(rS)<-c("nReads")
+hist(log10(rS), main = "Distribution of nReads in all Crete samples (no filtering; n=1907)", xlab = "log10(nReads/sample)")
+
+rS.f<-rS[rS > 1000, ]
+hist(log10(rS.f), main = "Distribution of nReads - Crete samples (nReads > 10,000; n=1823)", xlab = "log10(nReads/sample)")
+print("Number of Samples (nReads > 10,000)")
+length(rS.f)
+count.s.f.f<-count.s.f[rowSums(count.s.f) > 1000, ] ## 139 samples
+```
+
+#Shannon Diversity to metadata
+```{r}
+library("FactoMineR")
+library("factoextra")
+
+relabund<-count.s.f.f
+relabund<-relabund/rowSums(relabund)
+shannon<-as.data.frame(cbind(Shannon=diversity(relabund, index = "shannon"), sampleID1=rownames(relabund)))
+meta$Shannon<-as.numeric(shannon[match(meta$sampleID1, shannon$sampleID), "Shannon"])
+meta<-meta[!is.na(meta$Shannon), ]
+```
+
+# Table 1
+```{r}
+names(meta)[names(meta) %in% "mg.C...kg.of.soil..method.DOI.10.1080.00103629309368926."]<-"Organic Carbon"
+names(meta)[names(meta) %in% "mg.N...kg.of.soil..method.DOI..10.1080.00103629309368926."]<-"Organic Nitrogen"
+
+label(meta$Elevation..meters.)<-"Elevation (m)"
+label(meta$Vegetation.Zone)<-"Vegetation Zone"
+label(meta$soil.lab....moisture)<-"Soil Moisture (wfv)"
+label(meta$pH_corrected)<-"pH (Corrected)"
+label(meta$`Organic Carbon`)<-"Organic C (mg/kg soil)"
+label(meta$`Organic Nitrogen`)<-"Organic N (mg/kg soil)"
+label(meta$Shannon)<-"Shannon Diversity Index"
+
+require(table1)
+table1(~Elevation..meters. + soil.lab....moisture + pH_corrected + `Organic Carbon` + `Organic Nitrogen` + Shannon | Vegetation.Zone , meta, extra.col=list(`P-value`=pvalue),overall=F)
+```
+
+# Color schemes
+```{r}
+ecozone.cols<-c('#a6611a','#dfc27d','#80cdc1','#018571')
+```
+
+
+# Figure 2A, B, C, D
+```{r}
+f2a<-ggplot(meta, aes(y=Elevation..meters., x=log10(soil.lab....moisture), fill=Vegetation.Zone))+
+  #geom_point(size=1)+
+  geom_point(color="black", size=1, shape = 21, stroke = 0.25)+
+  xlab("Soil Moisture (wfv), log10")+
+  ylab("Elevation (m)")+
+  labs(colour="Vegetation Zone")+
+  scale_fill_manual(values=ecozone.cols)+
+  theme(panel.background = element_rect(color="transparent"), 
+        panel.grid = element_blank(), 
+        legend.position="none", 
+        text=element_text(size=6),
+        line = element_line(linewidth = 0.5))
+
+# f2b<-ggplot(meta, aes(y=pH_corrected, x=Vegetation.Zone, fill=Vegetation.Zone))+
+#   geom_boxplot(notch=T, outlier.shape = NA, linewidth = 0.1)+
+#   geom_point(size=0.3, position = position_jitterdodge(jitter.width = 0.5))+
+#   labs(fill="Vegetation Zone", names="Vegetation Zone")+
+#   scale_fill_manual(values=ecozone.cols)+
+#   theme(legend.position="none", 
+#         text=element_text(size=6),
+#         line = element_line(linewidth = 0.5))+
+#   xlab("")+
+#   ylab("pH")
+f2c<-ggplot(meta, aes(y=`Organic Carbon`, x=Vegetation.Zone, fill=Vegetation.Zone))+
+  geom_boxplot(notch=T, outlier.shape = NA, linewidth = 0.1)+
+  geom_point(size=0.3, position = position_jitterdodge(jitter.width = 0.5))+
+  labs(fill="Vegetation Zone", names="Vegetation Zone")+
+  scale_fill_manual(values=ecozone.cols)+
+  theme(legend.position="none", 
+        text=element_text(size=6),
+        axis.text.x =element_text(size=4),
+        line = element_line(linewidth = 0.5))+
+  xlab("")+
+  ylab("Organic Carbon (mg/kg Soil)")
+
+
+cmp<-list(c("Coastal and Littoral", "Lowland"), c("Coastal and Littoral", "Mountainous"), c("Lowland", "Mountainous"), c("Sub-Mountainous", "Mountainous"))
+f2d<-ggplot(meta, aes(y=`Organic Nitrogen`, x=Vegetation.Zone, fill=Vegetation.Zone))+
+  geom_boxplot(notch=T, outlier.shape = NA, linewidth = 0.1)+
+  geom_point(size=0.3, position = position_jitterdodge(jitter.width = 0.5))+
+  labs(fill="Vegetation Zone", names="Vegetation Zone")+
+  scale_fill_manual(values=ecozone.cols)+
+  theme(legend.position="none", 
+        text=element_text(size=6),
+        axis.text.x =element_text(size=4),
+        line = element_line(linewidth = 0.5))+
+  xlab("")+
+  ylab("Organic Nitrogen (mg/kg Soil)")+
+  geom_signif(comparisons = cmp,
+              na.rm = T,
+              y_position = 9,
+              tip_length = 0, 
+              map_signif_level = c("***"=0.001, "**"=0.01, "*"=0.05), 
+              vjust = 0.3, 
+              size = 0.3, 
+              textsize = 2, 
+              lineheight = 0.5, 
+              step_increase = 0.05)
+```
+
+#Figure 1E
+```{r}
+## is the shannon diversity measure more similar between samples from the same location than those from different locations? 
+## To do this, get the diff in shannon between each sample and categorize the comparison as between or within sites
+a<-as.data.frame(outer(meta$Shannon, meta$Shannon, FUN = "-"))
+names(a)<-meta$sample_name
+rownames(a)<-meta$sample_name
+a$site1<-rownames(a)
+a.m<-melt(a, id.vars="site1", variable.name = "site2", value.name = "Shannon_diff", na.rm = T)
+a.m<-a.m[a.m$site1 != a.m$site2 & a.m$Shannon_diff > 0, ] ## remove self-compare
+
+## define < 1m versis > 1m. 
+a.m$subsite_1<-paste(str_split_fixed(a.m$site1, pattern = "_", 6)[,1], str_split_fixed(a.m$site1, pattern = "_", 6)[,2], str_split_fixed(a.m$site1, pattern = "_", 6)[,3], str_split_fixed(a.m$site1, pattern = "_", 6)[,4], sep = "_")
+a.m$subsite_2<-paste(str_split_fixed(a.m$site2, pattern = "_", 6)[,1], str_split_fixed(a.m$site2, pattern = "_", 6)[,2], str_split_fixed(a.m$site2, pattern = "_", 6)[,3], str_split_fixed(a.m$site2, pattern = "_", 6)[,4], sep = "_")
+a.m$comp<-ifelse(a.m$subsite_1 == a.m$subsite_2, "Samples\n< 1m apart", "Samples\n> 1m apart")
+
+## Get ecozones
+a.m$site1_eco<-meta[match(a.m$site1, meta$sample_name), "Vegetation.Zone"]
+a.m$site2_eco<-meta[match(a.m$site1, meta$sample_name), "Vegetation.Zone"]
+
+f2e.data<-a.m
+#f2e.data$site1_eco<-factor(f2e.data$site1_eco, levels=c("coastal and littoral", "lowland", "sub-mountainous", "mountainous"), labels = c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
+#f2e.data$site2_eco<-factor(f2e.data$site2_eco, levels=c("coastal and littoral", "lowland", "sub-mountainous", "mountainous"), labels = c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
+
+wilcox_test<-c(wilcox.test(Shannon_diff ~ comp, data = a.m[a.m$site1_eco %in% "Coastal and Littoral", ], exact = FALSE)$p.value,
+               wilcox.test(Shannon_diff ~ comp, data = a.m[a.m$site1_eco %in% "Lowland", ], exact = FALSE)$p.value, 
+               wilcox.test(Shannon_diff ~ comp, data = a.m[a.m$site1_eco %in% "Sub-Mountainous", ], exact = FALSE)$p.value, 
+               wilcox.test(Shannon_diff ~ comp, data = a.m[a.m$site1_eco %in% "Mountainous", ], exact = FALSE)$p.value)
+
+
+significance <- ifelse(wilcox_test < 0.001, "***", ifelse(wilcox_test < 0.01, "**", ifelse(wilcox_test < 0.05, "*", "ns")))
+#At enrollment (prior to ARV initation), median Shannon diversity of all vaginal microbiomes was 0.8, with a significantly higher value observed among WLHIV compared to HIV-negative women (1.45 vs. 0.7, p<0.001, Figure 3A). 
+
+cmp<-list(c("Samples\n< 1m apart", "Samples\n> 1m apart"))
+f2e<-ggplot(f2e.data, aes(y=Shannon_diff, x=comp))+
+  geom_boxplot(notch=T, outlier.shape = NA, linewidth = 0.1, aes(fill=site1_eco))+
+  geom_point(size=0.01, aes(fill=site1_eco), position = position_jitterdodge(jitter.width = 0.5))+
+  scale_fill_manual(values=ecozone.cols)+
+  xlab("")+
+  ylab("Absolute Difference in\nShannon Diversity Index")+
+  theme(legend.position="none", 
+        text=element_text(size=6),
+        line = element_line(linewidth = 0.5),
+        strip.background = element_rect(linewidth = 0.5, fill = "white"))+
+  geom_signif(comparisons = cmp,
+              y_position = 1.1,
+              tip_length = 0, 
+              map_signif_level = c("***"=0.001, "**"=0.01, "*"=0.05), 
+              vjust = 0.1, 
+              size = 0.3, 
+              textsize = 2, 
+              lineheight = 0.5)+
+  facet_wrap(~site1_eco, nrow = 1)
+```
+
+
+# Figure 1 Compile
+```{r}
+top_row = ggarrange(f2a, f2d, f2c, nrow = 1, labels = c("A.", "B.", "C."), font.label = list(face="plain", size=8))
+bottom_row = ggarrange(top_row, f2e, nrow = 2, labels = c("", "D."), font.label = list(face="plain", size=8))
+tiff("Figure_2.tiff", height = 2400, width=4200, res=600)
+bottom_row
+dev.off()
+
+png("Figure_2.png", height = 2400, width=4200, res=600)
+bottom_row
+dev.off()
+```
+
+# Table 2: lm(Shannon ~ features)
+```{r}
+the.model<-lm(Shannon~Elevation..meters.+log10(soil.lab....moisture)+ pH_corrected + `Organic Carbon` + `Organic Nitrogen` + Vegetation.Zone, meta)
+# summary(the.model)
+# Call:
+# lm(formula = Shannon ~ Elevation..meters. + log10(soil.lab....moisture) + 
+#     pH_corrected + mg.C...kg.of.soil..method.DOI.10.1080.00103629309368926. + 
+#     mg.N...kg.of.soil..method.DOI..10.1080.00103629309368926., 
+#     data = to.test)
+# 
+# Residuals:
+#      Min       1Q   Median       3Q      Max 
+# -0.49553 -0.13352 -0.01321  0.13742  0.39058 
+# 
+# Coefficients:
+#                                                             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                                                4.542e+00  3.073e-01  14.783  < 2e-16 ***
+# Elevation..meters.                                        -1.253e-04  5.129e-05  -2.443 0.016582 *  
+# log10(soil.lab....moisture)                                1.101e-01  3.881e-02   2.837 0.005657 ** 
+# pH_corrected                                               2.769e-02  4.477e-02   0.619 0.537818    
+# mg.C...kg.of.soil..method.DOI.10.1080.00103629309368926.   2.180e-03  6.048e-04   3.604 0.000521 ***
+# mg.N...kg.of.soil..method.DOI..10.1080.00103629309368926. -2.527e-02  1.461e-02  -1.730 0.087230 .  
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.1905 on 87 degrees of freedom
+#   (51 observations deleted due to missingness)
+# Multiple R-squared:  0.2692,	Adjusted R-squared:  0.2272 
+# F-statistic: 6.409 on 5 and 87 DF,  p-value: 4.093e-05
+```
+
+
+# Beta-diversity
+```{r}
+relabund<-count.s.f.f
+relabund<-relabund/rowSums(relabund)
+relabund<-relabund[, order(colSums(relabund), decreasing = T)]
+sample.order<-rownames(relabund)
+the.dist<-vegan::vegdist(relabund, method = "bray")
+colfunc <- colorRampPalette(c("khaki", "limegreen", "darkslategray1", "mediumblue", "magenta", "red"))
+the.clsting<-hclust(the.dist, method="ward.D")
+top<-relabund[,1:75]
+
+## Get idea of prevalance of each taxa
+l<-cumsum(relabund)
+t<-as.data.frame(cbind(taxa=names(l), cumsum=colSums(l)))
+ggplot(t[1:100, ], aes(x=reorder(taxa, -as.numeric(cumsum)), y=as.numeric(cumsum)))+geom_bar(stat="identity")+theme(axis.text.x = element_text(angle=90, hjust=1, size=4))
+dev.off()
+
+## permanova: 
+rownames(meta)<-meta$sampleID1
+meta.features<-meta[sample.order, ]
+taxa.mod<-adonis2(the.dist~Vegetation.Zone, data=meta.features)
+taxa.mod2<-adonis2(the.dist~Elevation..meters.+soil.moisture....+pH+`Organic Carbon`+`Organic Nitrogen`, data=meta.features, strata = meta.features$Vegetation.Zone)
+```
+
+## The clusts (for plotting w/Beta)
+```{r}
+the.clusts<-as.data.frame(cbind(sampleID=the.clsting$labels, order=the.clsting$order, domTaxa=colnames(top)[max.col(top, ties.method="first")], abund=apply(top, 1, max)))
+the.clusts$cluster<-cutree(the.clsting, k=4)
+the.clusts<-as.data.frame(cbind(the.clusts, `Soil Moisture (wfv)°`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "soil.lab....moisture"]), 
+                                `pH`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "pH_corrected"]), 
+                                `Organic Carbon (mg/kg soil)`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "Organic Carbon"]), 
+                                `Organic Nitrogen (mg/kg soil)`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "Organic Nitrogen"]), 
+                                `Elevation (m)`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "Elevation..meters."]), 
+                                `Vegetation Zone`=as.character(meta[match(the.clusts$sampleID, meta$sampleID1), "Vegetation.Zone"])))
+
+the.clusts$`Vegetation Zone`<-factor(the.clusts$`Vegetation Zone`)
+the.clusts$`Elevation (m)`<-as.numeric(the.clusts$`Elevation (m)`)
+the.clusts$`Soil Moisture (wfv, log10-transformed)°`<-log10(as.numeric(the.clusts$`Soil Moisture (wfv)°`))
+the.clusts$pH<-as.numeric(the.clusts$pH)
+the.clusts$`Organic Carbon (mg/kg soil)`<-as.numeric(the.clusts$`Organic Carbon (mg/kg soil)`)
+the.clusts$`Organic Nitrogen (mg/kg soil)`<-as.numeric(the.clusts$`Organic Nitrogen (mg/kg soil)`)
+```
+
+## PCOA
+```{r}
+pcoa.d<-pcoa(the.dist, rn=rownames(count.s.f.f))
+pcoa.d.vectors<-as.data.frame(pcoa.d$vectors)
+pcoa.d.vectors$sampleID<-rownames(pcoa.d.vectors)
+
+the.clusts$`PCoA 1 [14%]`<-as.vector(pcoa.d.vectors[match(rownames(the.clusts), pcoa.d.vectors$sampleID), "Axis.1"])
+the.clusts$`PCoA 2 [12%]`<-as.vector(pcoa.d.vectors[match(rownames(the.clusts), pcoa.d.vectors$sampleID), "Axis.2"])
+```
+
+
+## Figure 3. 
+```{r}
+the.clusts$sampleID1<-rownames(the.clusts)
+the.clusts.m<-melt(the.clusts[,c("Soil Moisture (wfv, log10-transformed)°", "pH", "Organic Carbon (mg/kg soil)"  , "Organic Nitrogen (mg/kg soil)", "Elevation (m)", "Vegetation Zone", "sampleID1", "PCoA 1 [14%]", "PCoA 2 [12%]")], id.vars=c("Soil Moisture (wfv, log10-transformed)°", "pH", "Organic Carbon (mg/kg soil)"  , "Organic Nitrogen (mg/kg soil)", "Elevation (m)", "Vegetation Zone", "sampleID1"), variable.name = "PCoA", value.name = "PcOA_value")
+
+the.clusts.m<-melt(the.clusts.m, id.vars=c("PCoA", "PcOA_value", "sampleID1", "Vegetation Zone"), variable.name = "Feature", value.name = "value")
+
+labels<-as.data.frame(rbind(cbind(Feature="Elevation (m)", 
+                                  PCoA="PCoA 1 [14%]", 
+                                  R2=sprintf("italic(R^2) == %.2f", cor(the.clusts$`PCoA 1 [14%]`, the.clusts$`Elevation (m)`)^2), 
+                                  x=as.numeric(1500), 
+                                  y=as.numeric(0.25), 
+                                  p="p < 0.001"),
+                            cbind(Feature="Soil Moisture\n(wfv, log10-transformed)°", 
+                                  PCoA="PCoA 2 [13%]", 
+                                  R2=sprintf("italic(R^2) == %.2f", cor(the.clusts$`PCoA 2 [12%]`, the.clusts$`Soil Moisture (wfv, log10-transformed)°`)^2),
+                                  x=as.numeric(1), 
+                                  y=-as.numeric(0.3),
+                                  p="p < 0.001"
+                                  )))
+the.clusts.m$Feature<-factor(the.clusts.m$Feature, levels=c("Elevation (m)", "Soil Moisture (wfv, log10-transformed)°", "pH", "Organic Carbon (mg/kg soil)", "Organic Nitrogen (mg/kg soil)"), labels=c("Elevation (m)", "Soil Moisture\n(wfv, log10-transformed)°", "pH", "Organic Carbon (mg/kg soil)", "Organic Nitrogen (mg/kg soil)"))
+the.clusts.m$`Vegetation Zone`<-factor(the.clusts.m$`Vegetation Zone`, levels=c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
+ggplot(the.clusts.m, aes(x=value, y=PcOA_value))+
+  geom_point(size=1, shape=21, stroke = 0.25, aes(fill=`Vegetation Zone`))+
+  scale_fill_manual(values=ecozone.cols)+
+  facet_grid(~PCoA~Feature, scales="free")+
+  geom_smooth(method="lm", se = F, color="black", linetype = "dashed", linewidth=0.3)+
+  ylab("PCoA Value")+
+  theme(text=element_text(size=8), 
+        legend.direction = "horizontal", 
+        legend.position ="bottom", 
+        legend.background = element_blank(), 
+        axis.title.x = element_blank(), 
+        strip.background = element_rect(fill="white"), 
+        strip.text = element_text(face="bold"))+
+  stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~")), 
+           label.y.npc="top", 
+           label.x.npc = "center", 
+           method = "spearman", 
+           color = "black", 
+           geom = "text", 
+           size=2)
+ggsave("Figure_3.png", height=4, width=9)
+ggsave("Figure_3.tiff", height=4, width=9)
+```
+
+## Spearman correlation to determine taxa correlated with each PCoA
+```{r}
+nsamples<-apply(relabund, 2, function(x) sum(x>0)) ## how many samples is each taxon in?
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#   2.00    5.00   16.00   42.78   79.75  139.00 
+the.corrs<-cor(relabund[,names(relabund) %in% names(nsamples)[nsamples>1]], method = "spearman")
+
+require(rstatix)
+the.corrs.long<-cor_gather(the.corrs, drop.na = TRUE)
+the.corrs.long$same<-ifelse(the.corrs.long$var1 == the.corrs.long$var2, 1, 0)
+the.corrs.long<-the.corrs.long[the.corrs.long$same == 0, ]
+the.corrs.long$nvar1<-nsamples[match(the.corrs.long$var1, names(nsamples))]
+the.corrs.long$nvar2<-nsamples[match(the.corrs.long$var2, names(nsamples))]
+
+relabund.pcoa<-relabund 
+relabund.pcoa$`PCoA 1 [14%]`<-as.vector(pcoa.d.vectors[match(rownames(relabund.pcoa), pcoa.d.vectors$sampleID), "Axis.1"])
+relabund.pcoa$`PCoA 2 [12%]`<-as.vector(pcoa.d.vectors[match(rownames(relabund.pcoa), pcoa.d.vectors$sampleID), "Axis.2"])
+
+the.fit.m1<-data.frame()
+for(i in names(nsamples)[nsamples>1]){ ## determine which taxa have a linear relationship with each PCoA
+  the.model<-lm(`PCoA 1 [14%]`~ ., relabund.pcoa[,names(relabund.pcoa) %in% c("PCoA 1 [14%]", i)])
+  the.fit.m1<-rbind(the.fit.m1, cbind(taxon=i, 
+                                Estimate=as.numeric(summary(the.model)$coefficient[2, 1]),
+                                stderr=as.numeric(summary(the.model)$coefficient[2, 2]), 
+                                tvalue=as.numeric(summary(the.model)$coefficient[2, 3]), 
+                                p=as.numeric(summary(the.model)$coefficient[2, 4]), 
+                                r2=summary(the.model)$r.squared, 
+                                adj_r2=summary(the.model)$adj.r.squared))
+}
+the.fit.m1[,2:ncol(the.fit.m1)]<-apply(the.fit.m1[,2:ncol(the.fit.m1)], MARGIN = 2, as.numeric)
+the.fit.m1$padj<-p.adjust(the.fit.m1$p, method = "fdr")
+the.fit.m1$nsamples<-nsamples[match(the.fit.m1$taxon, names(nsamples))]
+
+the.fit.m2<-data.frame()
+for(i in names(nsamples)[nsamples>1]){
+  the.model<-lm(`PCoA 2 [12%]`~ ., relabund.pcoa[,names(relabund.pcoa) %in% c("PCoA 2 [12%]", i)])
+  the.fit.m2<-rbind(the.fit.m2, cbind(taxon=i, 
+                                Estimate=as.numeric(summary(the.model)$coefficient[2, 1]),
+                                stderr=as.numeric(summary(the.model)$coefficient[2, 2]), 
+                                tvalue=as.numeric(summary(the.model)$coefficient[2, 3]), 
+                                p=as.numeric(summary(the.model)$coefficient[2, 4]), 
+                                r2=summary(the.model)$r.squared, 
+                                adj_r2=summary(the.model)$adj.r.squared))
+}
+the.fit.m2[,2:ncol(the.fit.m2)]<-apply(the.fit.m2[,2:ncol(the.fit.m2)], MARGIN = 2, as.numeric)
+the.fit.m2$padj<-p.adjust(the.fit.m2$p, method = "fdr")
+the.fit.m2$nsamples<-nsamples[match(the.fit.m2$taxon, names(nsamples))]
+```
+
+# Figure 4: Pheatmap
+```{r}
+to.plot<-relabund[sample.order, ]
+to.plot$`Other, n=2,137 taxa`<-rowSums(to.plot[,76:ncol(to.plot)])
+to.plot<-to.plot[, c(1:75, which(names(to.plot) %in% "Other, n=2,137 taxa"))]
+row.dist<-vegan::vegdist(t(to.plot))
+row.clsting<-hclust(row.dist, method="average")
+names(to.plot)<-gsub("_", " ", names(to.plot))
+names(to.plot)<-gsub("_", " ", names(to.plot))
+italic_row_labels <- lapply(names(to.plot), function(label) {
+  if(grepl("^f ", label)){
+    return(label)
+  }
+  if(grepl("^o ", label)){
+    return(label)
+  }
+  if(grepl("^v ", label)){
+    return(label)
+  }
+  if(grepl("Other", label)){
+    return(label)
+  }
+  else{
+    return(bquote(italic(.(label))))
+  }
+})
+
+meta$route <- paste0(str_split_fixed(meta$sample_name, "_", 3)[,1], "_", str_split_fixed(meta$sample_name, "_", 3)[,2])
+
+the.clusts<-as.data.frame(
+  cbind( 
+                                `PCoA 2 [12%]`=as.vector(pcoa.d.vectors[match(rownames(to.plot), pcoa.d.vectors$sampleID), "Axis.2"]),
+                                `PCoA 1 [14%]`=as.vector(pcoa.d.vectors[match(rownames(to.plot), pcoa.d.vectors$sampleID), "Axis.1"]),
+                                `Organic Nitrogen (mg/kg soil)`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "Organic Nitrogen"]), 
+                                `Organic Carbon (mg/kg soil)`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "Organic Carbon"]), 
+                                `pH`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "pH_corrected"]), 
+                                `Soil Moisture (wfv)°`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "soil.lab....moisture"]), 
+                                `Elevation (m)`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "Elevation..meters."]), 
+                                `Vegetation Zone`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "Vegetation.Zone"])
+         ,
+  `Route`=as.character(meta[match(rownames(to.plot), meta$sampleID1), "route"])
+  )
+)
+
+the.clusts$`Vegetation Zone`<-factor(the.clusts$`Vegetation Zone`)
+the.clusts$`Elevation (m)`<-as.numeric(the.clusts$`Elevation (m)`)
+the.clusts$`Soil Moisture (wfv)°`<-log10(as.numeric(the.clusts$`Soil Moisture (wfv)°`))
+the.clusts$pH<-as.numeric(the.clusts$pH)
+the.clusts$`Organic Carbon (mg/kg soil)`<-as.numeric(the.clusts$`Organic Carbon (mg/kg soil)`)
+the.clusts$`Organic Nitrogen (mg/kg soil)`<-as.numeric(the.clusts$`Organic Nitrogen (mg/kg soil)`)
+the.clusts$`PCoA 1 [14%]`<-as.numeric(the.clusts$`PCoA 1 [14%]`)
+the.clusts$`PCoA 2 [12%]`<-as.numeric(the.clusts$`PCoA 2 [12%]`)
+row.names(the.clusts)<-rownames(to.plot)
+
+# transmission.cols<-c("purple4", "gold")
+# names(transmission.cols)<-c("infected", "uninfected")
+# 
+# time.cols<-c("black", "magenta", "pink", "red")
+# names(time.cols)<-c("Control", "Dam Stool", "24h", "Day 7")
+# 
+# strain.cols<-c("black", "green", "orange", "aquamarine", "yellow2", "lightblue", "lightblue3", "lightblue2", "lightblue4")
+# names(strain.cols)<-c("Control", "MG1655", "PBS", "UTI89", "ST5", "ST10", "ST511", "ST6438", "ST809")
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+veg.zone.cols<-ecozone.cols
+names(veg.zone.cols)<-c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous")
+
+veg.zone.cols<-ecozone.cols
+names(veg.zone.cols)<-c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous")
+
+colfunc <- colorRampPalette(c("khaki", "limegreen", "darkslategray1", "mediumblue", "magenta", "red"))
+require(pheatmap)
+png("Figure_4_average.png", width=7, height=6, units="in", res=600)
+pheatmap(t(as.matrix(to.plot)), 
+         color = colfunc(100), 
+         cluster_rows = FALSE, 
+         treeheight_row = 5,
+         cluster_cols = the.clsting,
+         #cutree_cols = 8,
+         annotation_row = NA,
+         legend = TRUE, 
+         fontsize = 5, 
+         fontsize_col = 5,
+         show_colnames = F,
+         annotation_col = the.clusts, 
+         annotation_colors = list(`Vegetation Zone`=veg.zone.cols),
+         border_color = NA,
+         labels_row = as.expression(italic_row_labels)
+         )
+dev.off()
+```
+
+# Figure 5. Features
+```{r}
+nsamples<-apply(relabund, 2, function(x) sum(x>0)) ## how many samples is each taxon in?
+
+relabund.pcoa<-count.s.f.f 
+relabund.pcoa$sampleID<-rownames(relabund.pcoa)
+the.clusts$sampleID<-rownames(the.clusts)
+relabund.pcoa<-merge(relabund.pcoa, the.clusts, all=TRUE)
+
+
+the.fit.m3<-data.frame()
+for(feature in names(the.clusts)[3:7]){
+  for(i in names(nsamples)[nsamples>14]){
+    the.model<-lm(relabund.pcoa[,names(relabund.pcoa) %in% feature] ~ log10(relabund.pcoa[,names(relabund.pcoa) %in% i]+0.001))
+    the.fit.m3<-rbind(the.fit.m3, cbind(taxon=i, 
+                                        Feature=feature,
+                                  Coefficient=as.numeric(summary(the.model)$coefficient[2, 1]),
+                                  stderr=as.numeric(summary(the.model)$coefficient[2, 2]), 
+                                  tvalue=as.numeric(summary(the.model)$coefficient[2, 3]), 
+                                  p=as.numeric(summary(the.model)$coefficient[2, 4]), 
+                                  r2=summary(the.model)$r.squared, 
+                                  adj_r2=summary(the.model)$adj.r.squared))
+  }
+}
+the.fit.m3[,3:ncol(the.fit.m3)]<-apply(the.fit.m3[,3:ncol(the.fit.m3)], MARGIN = 2, as.numeric)
+the.fit.m3$padj<-p.adjust(the.fit.m3$p, method = "fdr")
+the.fit.m3$nsamples<-nsamples[match(the.fit.m3$taxon, names(nsamples))]
+
+require(ggrepel)
+the.fit.m3$taxon<-gsub("_", " ", the.fit.m3$taxon)
+the.fit.m3$taxon<-gsub("//.", " ", the.fit.m3$taxon)
+the.fit.m3$Feature<-factor(the.fit.m3$Feature, levels=c("Elevation (m)", "Soil Moisture (wfv)°", "pH", "Organic Carbon (mg/kg soil)", "Organic Nitrogen (mg/kg soil)"), labels=c("Elevation (m)", "Soil Moisture\n(wfv, log10-transformed)°", "pH", "Organic Carbon (mg/kg soil)", "Organic Nitrogen (mg/kg soil)"))
+
+ggplot(the.fit.m3, aes(x=Coefficient, y=-log10(padj)))+
+  geom_point(size=0.5)+
+  facet_wrap(~Feature, scales="free_x", nrow=1)+
+  theme(text=element_text(size=6),
+        strip.background = element_rect(fill="white"),
+        strip.text = element_text(face="bold", size=8))+
+  geom_hline(yintercept = -log10(0.01), linetype = "dashed")+
+  geom_text_repel(data = subset(the.fit.m3, 
+        the.fit.m3[["padj"]] < 0.00005), aes(label = subset(the.fit.m3, 
+        the.fit.m3[["padj"]] < 0.00005)[["taxon"]]), size=2, na.rm = TRUE, segment.size = 0.1, box.padding = 0.1, min.segment.length = 0.2)
+ggsave("Figure_5.tiff", height=3, width=10)
+ggsave("Figure_5.png", height=3, width=10)
+
+the.fit.m3$Feature<-gsub("Moisture\n", "Moisture ", the.fit.m3$Feature)
+write.table(the.fit.m3, "Table_S1.txt", quote=F, row.names = F, sep="\t", eol = "\r")
+```
+
+<!-- title: "Crete_post_dada2_analysis" -->
+<!-- output: html_notebook -->
+<!-- author: Johanna B. Holm, PhD, University of Maryland School of Medicine, Institute for Genome Sciences -->
+<!-- date: 25Jul2024 -->
+<!-- editor_options:  -->
+<!--   chunk_output_type: console -->
