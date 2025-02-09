@@ -89,6 +89,7 @@ The scripts of the analysis are in the `Scripts` folder and cover the following 
 * Filtering, clustering/denoising and taxonomic assigninments
 * Biodiversity analysis
 * Figures
+* Manuscript analysis notebook (Rmd)
 
 The bioinformatic workflow can be summarized to : GET, INFER and ANALYZE as 
 shown below:
@@ -269,6 +270,11 @@ We used Python 3.11 and the following modules/libraries:
 * pandas 2.1.1
 * numpy 1.24.4
 * umap-learn 0.5.4
+
+## Notebook for the Analysis of the Paper
+We compiled a notebook specifically for the selection of the analyses that shaped the
+manucript of ISD Crete: Chapter 1. This notebook, in Rmd format, contains the multiple figures 
+that were compliled as well as documentation.
 
 ## Citation
 
