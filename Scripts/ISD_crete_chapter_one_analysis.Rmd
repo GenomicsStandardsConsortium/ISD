@@ -63,7 +63,7 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 # require(phyloseq)
 # require(stringr)
 # 
-# seqtab.nochim<-readRDS("all_runs_dada2_abundance_table.rds")
+# seqtab.nochim<-readRDS("../Results/all_runs_dada2_abundance_table.rds")
 # taxa <- assignTaxonomy(seqtab.nochim, "silva_nr_v123_train_set/silva_nr_v123_train_set.fa.gz", multithread=TRUE, tryRC = TRUE)
 # taxa <- addSpecies(taxa, "silva_nr_v123_train_set/silva_species_assignment_v123.fa.gz", tryRC = TRUE)
 # taxa.print <- taxa # Removing sequence rownames for display only
@@ -71,7 +71,7 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 # head(taxa.print)
 # # saveRDS(taxa, "taxa.RDS")
 # 
-# #taxa<-readRDS("taxa_17Nov2022.RDS")
+# taxa<-readRDS("../Results/taxa.RDS")
 # ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
 #                tax_table(taxa))
 # 
@@ -133,14 +133,13 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 
 #Read in data
 ```{r}
-setwd("~/Dropbox (IGS)/Crete/")
-count<-read.csv("Crete_ASV_countTable_silva_nr99_v138.csv", header=TRUE)
+count<-read.csv("../Results/Crete_ASV_countTable_silva_nr99_v138.csv", header=TRUE)
 #count<-seq
 rownames(count)<-count$sampleID
 count$sampleID<-NULL
 count[is.na(count)]<-0
 
-meta<-read.csv("Composite_MetaData_from_master.csv", header=TRUE)
+meta<-read.csv("../Data/ISD_Crete_Composite_Metadata.csv", header=TRUE)
 meta$sampleID1<-paste("s_", meta$sampleID, sep="")
 meta$Vegetation.Zone<-factor(meta$Vegetation.Zone, levels=c("coastal and littoral", "lowland", "sub-mountainous", "mountainous"), labels = c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
 ```
@@ -213,8 +212,8 @@ count.s.f.f<-count.s.f[rowSums(count.s.f) > 1000, ] ## 139 samples
 
 #Shannon Diversity to metadata
 ```{r}
-library("FactoMineR")
-library("factoextra")
+#library("FactoMineR")
+#library("factoextra")
 
 relabund<-count.s.f.f
 relabund<-relabund/rowSums(relabund)
@@ -368,11 +367,11 @@ f2e<-ggplot(f2e.data, aes(y=Shannon_diff, x=comp))+
 ```{r}
 top_row = ggarrange(f2a, f2d, f2c, nrow = 1, labels = c("A.", "B.", "C."), font.label = list(face="plain", size=8))
 bottom_row = ggarrange(top_row, f2e, nrow = 2, labels = c("", "D."), font.label = list(face="plain", size=8))
-tiff("Figure_2.tiff", height = 2400, width=4200, res=600)
+tiff("../Figures/Figure_2.tiff", height = 2400, width=4200, res=600)
 bottom_row
 dev.off()
 
-png("Figure_2.png", height = 2400, width=4200, res=600)
+png("../Figures/Figure_2.png", height = 2400, width=4200, res=600)
 bottom_row
 dev.off()
 ```
@@ -423,7 +422,9 @@ top<-relabund[,1:75]
 ## Get idea of prevalance of each taxa
 l<-cumsum(relabund)
 t<-as.data.frame(cbind(taxa=names(l), cumsum=colSums(l)))
-ggplot(t[1:100, ], aes(x=reorder(taxa, -as.numeric(cumsum)), y=as.numeric(cumsum)))+geom_bar(stat="identity")+theme(axis.text.x = element_text(angle=90, hjust=1, size=4))
+ggplot(t[1:100, ], aes(x=reorder(taxa, -as.numeric(cumsum)), y=as.numeric(cumsum)))+
+    geom_bar(stat="identity")+
+    theme(axis.text.x = element_text(angle=90, hjust=1, size=4))
 dev.off()
 
 ## permanova: 
@@ -505,8 +506,8 @@ ggplot(the.clusts.m, aes(x=value, y=PcOA_value))+
            color = "black", 
            geom = "text", 
            size=2)
-ggsave("Figure_3.png", height=4, width=9)
-ggsave("Figure_3.tiff", height=4, width=9)
+ggsave("../Figures/Figure_3.png", height=4, width=9)
+ggsave("../Figures/Figure_3.tiff", height=4, width=9)
 ```
 
 ## Spearman correlation to determine taxa correlated with each PCoA
@@ -632,7 +633,7 @@ names(veg.zone.cols)<-c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "M
 
 colfunc <- colorRampPalette(c("khaki", "limegreen", "darkslategray1", "mediumblue", "magenta", "red"))
 require(pheatmap)
-png("Figure_4_average.png", width=7, height=6, units="in", res=600)
+png("../Figures/Figure_4_average.png", width=7, height=6, units="in", res=600)
 pheatmap(t(as.matrix(to.plot)), 
          color = colfunc(100), 
          cluster_rows = FALSE, 
@@ -695,11 +696,11 @@ ggplot(the.fit.m3, aes(x=Coefficient, y=-log10(padj)))+
   geom_text_repel(data = subset(the.fit.m3, 
         the.fit.m3[["padj"]] < 0.00005), aes(label = subset(the.fit.m3, 
         the.fit.m3[["padj"]] < 0.00005)[["taxon"]]), size=2, na.rm = TRUE, segment.size = 0.1, box.padding = 0.1, min.segment.length = 0.2)
-ggsave("Figure_5.tiff", height=3, width=10)
-ggsave("Figure_5.png", height=3, width=10)
+ggsave("../Figures/Figure_5.tiff", height=3, width=10)
+ggsave("../Figures/Figure_5.png", height=3, width=10)
 
 the.fit.m3$Feature<-gsub("Moisture\n", "Moisture ", the.fit.m3$Feature)
-write.table(the.fit.m3, "Table_S1.txt", quote=F, row.names = F, sep="\t", eol = "\r")
+write.table(the.fit.m3, "../Results/Table_S1.txt", quote=F, row.names = F, sep="\t", eol = "\r")
 ```
 
 <!-- title: "Crete_post_dada2_analysis" -->
