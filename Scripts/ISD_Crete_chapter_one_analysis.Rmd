@@ -1,5 +1,5 @@
 ---
-title: "Crete_post_dada2_analysis"
+title: "ISD Crete post DADA2 analysis"
 output: html_notebook
 author: Johanna B. Holm, PhD, University of Maryland School of Medicine, Institute for Genome Sciences
 date: 25Jul2024
@@ -63,15 +63,15 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 # require(phyloseq)
 # require(stringr)
 # 
-# seqtab.nochim<-readRDS("../Results/all_runs_dada2_abundance_table.rds")
+# seqtab.nochim<-readRDS("../Results/ISD_Crete_all_runs_dada2_abundance_table.rds")
 # taxa <- assignTaxonomy(seqtab.nochim, "silva_nr_v123_train_set/silva_nr_v123_train_set.fa.gz", multithread=TRUE, tryRC = TRUE)
 # taxa <- addSpecies(taxa, "silva_nr_v123_train_set/silva_species_assignment_v123.fa.gz", tryRC = TRUE)
 # taxa.print <- taxa # Removing sequence rownames for display only
 # rownames(taxa.print) <- NULL
 # head(taxa.print)
-# # saveRDS(taxa, "taxa.RDS")
+# # saveRDS(taxa, "ISD_Crete_taxa.RDS")
 # 
-# taxa<-readRDS("../Results/taxa.RDS")
+# taxa<-readRDS("../Results/ISD_Crete_taxa.RDS")
 # ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
 #                tax_table(taxa))
 # 
@@ -133,7 +133,7 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 
 #Read in data
 ```{r}
-count<-read.csv("../Results/Crete_ASV_countTable_silva_nr99_v138.csv", header=TRUE)
+count<-read.csv("../Results/ISD_Crete_ASV_countTable_silva_nr99_v138.csv", header=TRUE)
 #count<-seq
 rownames(count)<-count$sampleID
 count$sampleID<-NULL
