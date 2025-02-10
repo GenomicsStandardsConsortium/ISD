@@ -127,7 +127,7 @@ c("", sub("<", "&lt;", format.pval(p, digits=1, eps=0.001)))
 # seq<-as.data.frame(otu_table(ps1))
 # names(seq)<-taxa[,6]
 # seq$sampleID<-gsub("X", "", rownames(seq))
-# #write.csv(seq, "Crete_ASV_countTable_silva_nr99_v138.csv", quote=F, row.names=F)
+# #write.csv(seq, "ISD_Crete_ASV_countTable_silva_nr99_v138.csv", quote=F, row.names=F)
 ```
 
 
@@ -705,11 +705,14 @@ write.table(the.fit.m3, "../Results/Table_S1.txt", quote=F, row.names = F, sep="
 
 # Map of Crete
 
+
+
 ```{r}
 
 library(sf)
-library(raster)
+library(terra)
 library(ggnewscale)
+library(rayshader)
 
 locations_spatial <- meta |>
     st_as_sf(coords=c("longitude", "latitude"),
@@ -717,9 +720,115 @@ locations_spatial <- meta |>
              crs="WGS84")
 
 crete_shp <- sf::st_read("../Data/crete/crete.shp")
-dem_crete <- raster("../Data/dem_crete/dem_crete.tif")
-dem_crete_pixel <- as(dem_crete, "SpatialPixelsDataFrame")
-dem_crete_df <- as.data.frame(dem_crete_pixel) %>% filter(dem_crete>0)
+crete_clc <- sf::st_read("../Data/clc_crete_shp/clc_crete_shp.shp")
+dem_crete <- terra::rast("../Data/dem_crete/dem_crete.tif")
+
+colors_clc_label2_v <- c(
+  "Artificial, non-agricultural vegetated areas" = "#000000",
+  "Open spaces with little or no vegetation" = "#A77300",
+  "Pastures" = "#98BA6A",
+  "Mine, dump and construction sites" = "#46B0D3",
+  "Forests" = "#07A07D",
+  "Scrub and/or herbaceous vegetation associations" = "#98CA53",
+  "Urban fabric" = "#A4A869",
+  "Inland waters" = "#1370A1",
+  "Permanent crops" = "#AE6120",
+  "Industrial, commercial and transport units" = "#D06C5B",
+  "Heterogeneous agricultural areas" = "#BE81A3",
+  "Arable land" = "#999999"
+)
+
+# Convert Hex to RGB
+hex_to_rgb <- function(hex) {
+  rgb_vals <- col2rgb(hex)
+  return(data.frame(r = rgb_vals[1,], g = rgb_vals[2,], b = rgb_vals[3,]))
+}
+
+# Create an RGB lookup table
+color_map <- data.frame(
+  value = 1:length(colors_clc_label2_v),  # Assign class values (modify as needed)
+  hex = colors_clc_label2_v
+  ) |> rownames_to_column("LABEL2")
+
+crete_clc <- crete_clc |> left_join(color_map, by=c("LABEL2"="LABEL2"))
+
+crete_clc_r <- rast(ext(crete_clc), res=0.01)
+rasterized_clc <- rasterize(crete_clc, crete_clc_r, field="value")
+
+rasterized_clc <- na.omit(rasterized_clc)
+
+# Add RGB columns
+color_map <- cbind(color_map, hex_to_rgb(color_map$hex))
+r_r <- classify(rasterized_clc, cbind(color_map$value, color_map$r))
+r_g <- classify(rasterized_clc, cbind(color_map$value, color_map$g))
+r_b <- classify(rasterized_clc, cbind(color_map$value, color_map$b))
+
+clc_crete_rgb_raster <- c(r_r, r_g, r_b)
+writeRaster(clc_crete_rgb_raster, "../Results/clc_crete_rgb_raster.tif", overwrite=TRUE)
+
+clc_crete_resampled <- terra::resample(
+    x = clc_crete_rgb_raster,
+    y = terra::rast(dem_crete),
+    method = "near"
+) 
+
+clc_crete_resampled[is.na(clc_crete_resampled)] <- 0
+
+img_file <- "../Figures/land_cover_crete.png"
+
+terra::writeRaster(
+    clc_crete_resampled,
+    img_file,
+    overwrite = T,
+    NAflag = 255
+)
+
+img <- png::readPNG(img_file)
+
+elev_lambert <- dem_crete
+
+elmat <- rayshader::raster_to_matrix(
+    elev_lambert
+)
+
+h <- nrow(elev_lambert)
+w <- ncol(elev_lambert)
+
+elmat |>
+    rayshader::height_shade(
+        texture = colorRampPalette(
+            cols[12]
+        )(256)
+    ) |>
+    rayshader::add_overlay(
+        img,
+        alphalayer = 1
+    ) |>
+    rayshader::plot_3d(
+        elmat,
+        zscale = 12,
+        solid = F,
+        shadow = T,
+        shadow_darkness = 1,
+        background = "white",
+        windowsize = c(
+            w / 5, h / 5
+        ),
+        zoom = .5,
+        phi = 85,
+        theta = 0
+    )
+
+rayshader::render_camera(
+    zoom = .58
+)
+
+
+
+
+
+
+
 
 routes_cols=c("isd_1"="#999999",
               "isd_2"="#E69F00",
@@ -734,6 +843,13 @@ routes_cols=c("isd_1"="#999999",
 
 locations_spatial$route <- factor(locations_spatial$route,
                         levels=unique(locations_spatial$route)[order(sort(unique(locations_spatial$route)))])
+
+
+elmat <- rayshader::raster_to_matrix(
+    dem_crete
+)
+
+
 crete_base <- ggplot() +
     geom_sf(crete_shp, mapping=aes()) +
     geom_raster(dem_crete_df, mapping=aes(x=x, y=y, fill=dem_crete))+
