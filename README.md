@@ -51,6 +51,7 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 * [Data integration](#data-integration)
 * [Inference and Taxonomy](#inference-and-taxonomy)
 * [Biodiversity](#biodiversity)
+* [Notebook with comprehensive analysis](#notebook-for-the-analysis-of-the-paper)
 * [Software](#software)
 * [Hardware](#hardware)
 * [Citation](#citation)
@@ -223,6 +224,11 @@ Biodiversity analysis includes the following topics:
 * Same site locations comparison – two sampling sites, at the same sampling
 location - Bray Curtis dissimilarity – supports treating the samples separately
 
+## Notebook for the Analysis of the Paper
+We compiled a notebook specifically for the selection of the analyses that shaped the
+manucript of ISD Crete: Chapter 1. This notebook, written Rmd format, contains the multiple figures 
+that were compliled in the manuscript as well as documentation. 
+
 ## Hardware
 
 Most computations were performed in the Zorbas HPC facility of [IMBBC-HCMR](https://hpc.hcmr.gr),
@@ -270,11 +276,6 @@ We used Python 3.11 and the following modules/libraries:
 * pandas 2.1.1
 * numpy 1.24.4
 * umap-learn 0.5.4
-
-## Notebook for the Analysis of the Paper
-We compiled a notebook specifically for the selection of the analyses that shaped the
-manucript of ISD Crete: Chapter 1. This notebook, in Rmd format, contains the multiple figures 
-that were compliled as well as documentation.
 
 ## Citation
 
