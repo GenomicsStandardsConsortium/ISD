@@ -713,6 +713,16 @@ library(sf)
 library(terra)
 library(ggnewscale)
 library(rayshader)
+library(tibble)
+
+###################### DATA #####################
+#write.table(meta, "../Results/ISD_Crete_metadata_analysis.tsv",sep="\t")
+#meta <- read.table("../Results/ISD_Crete_metadata_analysis.tsv",sep="\t")
+meta<-read.csv("../Data/ISD_Crete_Composite_Metadata.csv", header=TRUE)
+meta$Vegetation.Zone<-factor(meta$Vegetation.Zone, levels=c("coastal and littoral", "lowland", "sub-mountainous", "mountainous"), labels = c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous"))
+
+
+meta$route <- paste0(str_split_fixed(meta$sample_name, "_", 3)[,1], "_", str_split_fixed(meta$sample_name, "_", 3)[,2])
 
 locations_spatial <- meta |>
     st_as_sf(coords=c("longitude", "latitude"),
@@ -721,7 +731,13 @@ locations_spatial <- meta |>
 
 crete_shp <- sf::st_read("../Data/crete/crete.shp")
 crete_clc <- sf::st_read("../Data/clc_crete_shp/clc_crete_shp.shp")
-dem_crete <- terra::rast("../Data/dem_crete/dem_crete.tif")
+
+dem_crete <- raster::raster("../Data/dem_crete/dem_crete.tif")
+dem_crete_pixel <- as(dem_crete, "SpatialPixelsDataFrame")
+dem_crete_df <- as.data.frame(dem_crete_pixel) %>% filter(dem_crete>0)
+
+
+#################### colors ###################
 
 colors_clc_label2_v <- c(
   "Artificial, non-agricultural vegetated areas" = "#000000",
@@ -737,6 +753,119 @@ colors_clc_label2_v <- c(
   "Heterogeneous agricultural areas" = "#BE81A3",
   "Arable land" = "#999999"
 )
+
+routes_cols=c("isd_1"="#999999",
+              "isd_2"="#E69F00",
+              "isd_3"="#56B4E9",
+              "isd_4"="#009E73",
+              "isd_5"="#F0E442",
+              "isd_6"="#0072B2",
+              "isd_7"="#D55E00",
+              "isd_8"="#CC79A7",
+              "isd_9"="#000000",
+              "isd_10"="firebrick")
+
+locations_spatial$route <- factor(locations_spatial$route,
+                        levels=unique(locations_spatial$route)[order(sort(unique(locations_spatial$route)))])
+
+
+ecozone.cols<-c('#a6611a','#dfc27d','#80cdc1','#018571')
+veg.zone.cols<-ecozone.cols
+names(veg.zone.cols)<-c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous")
+
+########################## 2D map ########################
+
+route_labels <- locations_spatial |> 
+   filter(grepl("site_1_loc_1",team_site_location_id))
+
+
+crete_base <- ggplot() +
+    geom_sf(crete_shp, mapping=aes()) +
+    geom_raster(dem_crete_df, mapping=aes(x=x, y=y, fill=dem_crete))+
+    scale_fill_gradientn(guide = guide_colourbar(barwidth = 6, barheight = 1,
+                                  title="Elevation",
+                                  direction = "horizontal",
+                                  title.vjust = 0.8),
+                        colours = c("snow3","#f0e442","#d55e00","#cc79a7"),
+                        breaks = c(100, 800, 1500, 2400),
+                        labels = c(100, 800, 1500, 2400))+
+    new_scale_fill()+
+    geom_point(locations_spatial,
+            mapping=aes(x=longitude,
+                        y=latitude,
+                        group=route,
+                        fill=Vegetation.Zone),
+            size=5,
+            shape=21,
+            color="gray30",
+            alpha=0.8,
+            show.legend=T) +
+    scale_fill_manual(values=veg.zone.cols,
+                      name="route",
+                      guide = guide_legend(title = "Ecozones",
+                                           nrow=1,
+                                           byrow=TRUE,
+                                           direction = "horizontal"))+
+    new_scale_color()+
+    geom_line(locations_spatial,
+            mapping=aes(x=longitude,
+                        y=latitude,
+                        group=route,
+                        color=route),
+            linewidth=1.1,
+            alpha=0.8,
+            show.legend=F) +
+    geom_label(route_labels,
+              mapping=aes(x=longitude,
+                          y=latitude,
+                          label=route,
+                          color=route),
+               fontface = "bold",
+               size=4,
+              vjust = 0,
+              nudge_y = 0.02,
+              check_overlap = TRUE)+
+    scale_color_manual(values=routes_cols,
+                      name="route",
+                      guide = "none"
+                      #guide_legend(title = "Routes",
+                      #                     nrow=2,
+                      #                     byrow=TRUE,
+                      #                     direction = "horizontal")
+                      )+
+    coord_sf(crs="wgs84") +
+    theme_bw()+
+    theme(axis.title=element_blank(),
+          panel.border = element_blank(),
+#          plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+          panel.grid.major = element_blank(), #remove major gridlines
+          panel.grid.minor = element_blank(), #remove minor gridlines
+          legend.background = element_rect(fill='transparent'), #transparent legend bg
+          line = element_blank(),
+          axis.text=element_blank(),
+          legend.text=element_text(size=11),
+          legend.title = element_text(size=11),
+          legend.position = "bottom")
+
+
+ggsave("../Figures/Figure_1.png",
+       plot=crete_base,
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="png")
+
+
+ggsave("../Figures/Figure_1.tiff",
+       plot=crete_base,
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="tiff")
+
+
 
 # Convert Hex to RGB
 hex_to_rgb <- function(hex) {
@@ -830,82 +959,10 @@ rayshader::render_camera(
 
 
 
-routes_cols=c("isd_1"="#999999",
-              "isd_2"="#E69F00",
-              "isd_3"="#56B4E9",
-              "isd_4"="#009E73",
-              "isd_5"="#F0E442",
-              "isd_6"="#0072B2",
-              "isd_7"="#D55E00",
-              "isd_8"="#CC79A7",
-              "isd_9"="#000000",
-              "isd_10"="firebrick")
-
-locations_spatial$route <- factor(locations_spatial$route,
-                        levels=unique(locations_spatial$route)[order(sort(unique(locations_spatial$route)))])
-
-
 elmat <- rayshader::raster_to_matrix(
     dem_crete
 )
 
-
-crete_base <- ggplot() +
-    geom_sf(crete_shp, mapping=aes()) +
-    geom_raster(dem_crete_df, mapping=aes(x=x, y=y, fill=dem_crete))+
-    scale_fill_gradientn(guide = guide_colourbar(barwidth = 6, barheight = 1,
-                                  title="Elevation",
-                                  direction = "horizontal",
-                                  title.vjust = 0.8),
-                        colours = c("snow3","#f0e442","#d55e00","#cc79a7"),
-                        breaks = c(100, 800, 1500, 2400),
-                        labels = c(100, 800, 1500, 2400))+
-    new_scale_fill()+
-    geom_point(locations_spatial,
-            mapping=aes(x=longitude,
-                        y=latitude,
-                        fill=route),
-            size=5,
-            shape=21,
-            color="gray30",
-            alpha=0.8,
-            show.legend=T) +
-    scale_fill_manual(values=routes_cols,
-                      name="route",
-                      guide = guide_legend(title = "Routes",
-                                           nrow=1,
-                                           byrow=TRUE,
-                                           direction = "horizontal"))+
-    coord_sf(crs="wgs84") +
-    theme_bw()+
-    theme(axis.title=element_blank(),
-          panel.border = element_blank(),
-#          plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
-          panel.grid.major = element_blank(), #remove major gridlines
-          panel.grid.minor = element_blank(), #remove minor gridlines
-          legend.background = element_rect(fill='transparent'), #transparent legend bg
-          line = element_blank(),
-          axis.text=element_blank(),
-          legend.text=element_text(size=11),
-          legend.title = element_text(size=11),
-          legend.position = "bottom")
-
-
-ggsave("../Figures/Figure_1.tiff",
-       plot=crete_base,
-       height = 20,
-       width = 40,
-       dpi = 300,
-       units="cm",
-       device="tiff")
-
-ggsave("../Figures/Figure_1.png",
-       plot=crete_base,
-       height = 20,
-       width = 40,
-       dpi = 300,
-       units="cm",
-       device="png")
 
 
 

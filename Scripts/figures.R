@@ -3,7 +3,7 @@
 # script name: figures.R
 # developed by: Savvas Paragkamian
 # framework: ISD Crete
-###############################################################################
+##############################################################################j
 # GOAL:
 # Aim of this script is to load the results and with some minor counts and 
 # transformations make publication-quality figures. That includes maps, bar 
@@ -90,6 +90,8 @@ dem_crete <- raster("Data/dem_crete/dem_crete.tif")
 dem_crete_pixel <- as(dem_crete, "SpatialPixelsDataFrame")
 dem_crete_df <- as.data.frame(dem_crete_pixel) %>% filter(dem_crete>0)
 
+aa <- st_cast(crete_shp,"POLYGON") |> mutate(area=st_area(geometry)) |> arrang
+e(desc(area)) |> filter(area>8200000000)
 ####################### UCIE #########################
 # UCIE needs 3 axis of ordination
 print("starting UCIE")
