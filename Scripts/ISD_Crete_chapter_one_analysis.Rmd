@@ -823,7 +823,7 @@ crete_base <- ggplot() +
                fontface = "bold",
                size=4,
               vjust = 0,
-              nudge_y = 0.02,
+              nudge_y = 0.03,
               check_overlap = TRUE)+
     scale_color_manual(values=routes_cols,
                       name="route",
@@ -861,108 +861,9 @@ ggsave("../Figures/Figure_1.tiff",
        plot=crete_base,
        height = 20,
        width = 40,
-       dpi = 300,
+       dpi = 250,
        units="cm",
        device="tiff")
-
-
-
-# Convert Hex to RGB
-hex_to_rgb <- function(hex) {
-  rgb_vals <- col2rgb(hex)
-  return(data.frame(r = rgb_vals[1,], g = rgb_vals[2,], b = rgb_vals[3,]))
-}
-
-# Create an RGB lookup table
-color_map <- data.frame(
-  value = 1:length(colors_clc_label2_v),  # Assign class values (modify as needed)
-  hex = colors_clc_label2_v
-  ) |> rownames_to_column("LABEL2")
-
-crete_clc <- crete_clc |> left_join(color_map, by=c("LABEL2"="LABEL2"))
-
-crete_clc_r <- rast(ext(crete_clc), res=0.01)
-rasterized_clc <- rasterize(crete_clc, crete_clc_r, field="value")
-
-rasterized_clc <- na.omit(rasterized_clc)
-
-# Add RGB columns
-color_map <- cbind(color_map, hex_to_rgb(color_map$hex))
-r_r <- classify(rasterized_clc, cbind(color_map$value, color_map$r))
-r_g <- classify(rasterized_clc, cbind(color_map$value, color_map$g))
-r_b <- classify(rasterized_clc, cbind(color_map$value, color_map$b))
-
-clc_crete_rgb_raster <- c(r_r, r_g, r_b)
-writeRaster(clc_crete_rgb_raster, "../Results/clc_crete_rgb_raster.tif", overwrite=TRUE)
-
-clc_crete_resampled <- terra::resample(
-    x = clc_crete_rgb_raster,
-    y = terra::rast(dem_crete),
-    method = "near"
-) 
-
-clc_crete_resampled[is.na(clc_crete_resampled)] <- 0
-
-img_file <- "../Figures/land_cover_crete.png"
-
-terra::writeRaster(
-    clc_crete_resampled,
-    img_file,
-    overwrite = T,
-    NAflag = 255
-)
-
-img <- png::readPNG(img_file)
-
-elev_lambert <- dem_crete
-
-elmat <- rayshader::raster_to_matrix(
-    elev_lambert
-)
-
-h <- nrow(elev_lambert)
-w <- ncol(elev_lambert)
-
-elmat |>
-    rayshader::height_shade(
-        texture = colorRampPalette(
-            cols[12]
-        )(256)
-    ) |>
-    rayshader::add_overlay(
-        img,
-        alphalayer = 1
-    ) |>
-    rayshader::plot_3d(
-        elmat,
-        zscale = 12,
-        solid = F,
-        shadow = T,
-        shadow_darkness = 1,
-        background = "white",
-        windowsize = c(
-            w / 5, h / 5
-        ),
-        zoom = .5,
-        phi = 85,
-        theta = 0
-    )
-
-rayshader::render_camera(
-    zoom = .58
-)
-
-
-
-
-
-
-
-
-elmat <- rayshader::raster_to_matrix(
-    dem_crete
-)
-
 
 
 
