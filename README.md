@@ -3,8 +3,8 @@
 The Island Sampling Day draws inspiration from the Ocean 
 Sampling Day that is a consortium that facilitates yearly samplings 
 in stations from all around the world. This has great applications 
-in monitoring and comprehending the 
-complexity of the ocean microbiome and it's drivers.
+in monitoring and comprehending the complexity of the ocean microbiome 
+and it's drivers.
 
 The Island Sampling Day has been organised in two islands, Moorea 
 in the French Polynisia and Crete in Greece. The Moorea sampling day event took 
@@ -22,10 +22,10 @@ studies which for the past 20 years, have sampled multiple local and
 large scale regions (e.g. France microbiome, Earth Microbiome). These 
 studies indicated that microbes are omnipresent and impact global ecosystem 
 processes through their abundance, versatility and biotic interactions 
-(i.e. interactomes). Additionally, microbes influence the major nutrient
+(i.e., interactomes). Additionally, microbes influence the major nutrient
 cycles and ecosystem functions, such as plant and animal productivity. 
 Changes in the structure of microbial communities can be indicative of
-ecosystem tipping points e.g aridification.
+ecosystem tipping points (e.g., aridification).
 
 ## Chapter one: Crete 2016
 
@@ -36,11 +36,11 @@ A snapshot of the prokaryotic diversity across the island of Crete. Aim to:
 
 1. Put metadata into action through a citizen science project to demonstrate their value in future samplings
 2. Describe the first full island microbial community assessment
-3. Shed light on phylotypes found not to be all the same across Crete’s distinct terrestrial habitats (<i>intra comparison</i>)
+3. Shed light on the difffering phylotypes across Crete’s distinct terrestrial habitats (<i>intra comparison</i>)
 4. Present a “local” (island) vs “global” (world, e.g. EMP) soil phylotype comparative analysis (<i>inter comparison</i>)
 
 This repository holds ISD molecular ecology analysis pertinent scripts.
-ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/view/PRJEB21776" target="blank">European Nucleotide Archive repository project</a>.
+ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/view/PRJEB21776" target="blank">European Nucleotide Archive repository project</a>. BioSample IDs can be linked to the metadata sample_names through the field "source material identifiers”.
 
 ## Contents
 
@@ -68,7 +68,7 @@ ISD sequence data are available as a <a href="https://www.ebi.ac.uk/ena/data/vie
 
 ## Sampling
 
-During the 18th of Genome Standards Consortium workshop the participants along
+During the 18th Genomic Standards Consortium workshop the participants along
 with members of Hellenic Centre for Marine Research organised the Island Sampling Day Crete 2016. 
 
 One Day, One Island - 15th June 2016, Crete
