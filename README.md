@@ -279,7 +279,7 @@ We used Python 3.11 and the following modules/libraries:
 
 ## Citation
 
-ISD Crete consortium
+Holm, J.B., Paragkamian, S., Humphreys, M. et al. First island-wide, single-day soil collection study on Crete reveals environmental drivers of microbial diversity. Environmental Microbiome 20, 94 (2025). https://doi.org/10.1186/s40793-025-00752-z
 
 ## Licence
 
