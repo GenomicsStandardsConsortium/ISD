@@ -41,6 +41,7 @@ library(sf)
 library(jpeg)
 library(raster)
 library(scales)
+library(units)
 library(ucie)
 
 ################################## User input #################################
@@ -90,8 +91,9 @@ dem_crete <- raster("Data/dem_crete/dem_crete.tif")
 dem_crete_pixel <- as(dem_crete, "SpatialPixelsDataFrame")
 dem_crete_df <- as.data.frame(dem_crete_pixel) %>% filter(dem_crete>0)
 
-aa <- st_cast(crete_shp,"POLYGON") |> mutate(area=st_area(geometry)) |> arrang
-e(desc(area)) |> filter(area>8200000000)
+crete_only <- st_cast(crete_shp,"POLYGON") |>
+    mutate(area=st_area(geometry)) |>
+    filter(area > set_units(8.2e+09, "m^2")) 
 ####################### UCIE #########################
 # UCIE needs 3 axis of ordination
 print("starting UCIE")
@@ -358,6 +360,72 @@ crete_dend_clusters <- ggplot() +
 ggsave("Figures/map_crete_dend_cluster.png",
        plot=crete_dend_clusters,
        bg='transparent',
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="png")
+
+
+
+##### ecozones ###
+
+ecozone.cols<-c('#a6611a','#dfc27d','#80cdc1','#018571')
+veg.zone.cols<-ecozone.cols
+names(veg.zone.cols)<-c("Coastal and Littoral", "Lowland", "Sub-Mountainous", "Mountainous")
+
+
+crete_base <- ggplot() +
+    geom_sf(crete_shp, mapping=aes()) +
+    geom_raster(dem_crete_df, mapping=aes(x=x, y=y, fill=dem_crete))+
+    scale_fill_gradientn(guide = guide_colourbar(barwidth = 6, barheight = 1,
+                                  title="Elevation",
+                                  direction = "horizontal",
+                                  title.vjust = 0.8),
+                        colours = c("snow3","#f0e442","#d55e00","#cc79a7"),
+                        breaks = c(100, 800, 1500, 2400),
+                        labels = c(100, 800, 1500, 2400))+
+    new_scale_fill()+
+    geom_point(locations_spatial,
+            mapping=aes(x=longitude,
+                        y=latitude,
+                        fill=Vegetation.Zone),
+            size=5,
+            shape=21,
+            color="gray30",
+            alpha=0.8,
+            show.legend=T) +
+    scale_fill_manual(values=veg.zone.cols,
+                      name="route",
+                      guide = guide_legend(title = "Ecozones",
+                                           nrow=1,
+                                           byrow=TRUE,
+                                           direction = "horizontal"))+
+    coord_sf(crs="wgs84") +
+    theme_bw()+
+    theme(axis.title=element_blank(),
+          panel.border = element_blank(),
+#          plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+          panel.grid.major = element_blank(), #remove major gridlines
+          panel.grid.minor = element_blank(), #remove minor gridlines
+          legend.background = element_rect(fill='transparent'), #transparent legend bg
+          line = element_blank(),
+          axis.text=element_blank(),
+          legend.text=element_text(size=11),
+          legend.title = element_text(size=11),
+          legend.position = "bottom")
+
+
+ggsave("../Figures/Figure_1.tiff",
+       plot=crete_base,
+       height = 20,
+       width = 40,
+       dpi = 300,
+       units="cm",
+       device="tiff")
+
+ggsave("../Figures/Figure_1.png",
+       plot=crete_base,
        height = 20,
        width = 40,
        dpi = 300,
